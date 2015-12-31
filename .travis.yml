@@ -1,0 +1,9 @@
+language: scala
+scala:
+  - 2.10.6
+jdk:
+  - oraclejdk7
+
+install:
+  - git clone https://github.com/bdzimmer/util-scala ../util-scala
+script: sbt ++$TRAVIS_SCALA_VERSION test it:test
