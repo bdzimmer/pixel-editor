@@ -22,6 +22,7 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.File;
 
+import javax.swing.JButton;
 import javax.swing.JCheckBoxMenuItem;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
@@ -29,6 +30,10 @@ import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
 import javax.swing.JPanel;
+import javax.swing.JToggleButton;
+import javax.swing.JToolBar;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 
 
 
@@ -93,16 +98,20 @@ public class TilesEditorWindow extends JFrame {
     // main menu
     setJMenuBar(mainMenu());
     
+    // toolbar
+    this.add(mainToolbar(), BorderLayout.NORTH);
+    
     // tileset visualization
     dosGraphics = createDosGraphics();
     dosGraphics.setRgbPalette(paletteWindow.getDosGraphics().getRgbPalette());
-    graphicsPanel.add(dosGraphics);
-    this.add(graphicsPanel, BorderLayout.NORTH);
     
     // clicking to select and manipulate tiles
     dosGraphics.addMouseListener(new MouseAdapter() {
       public void mouseClicked(MouseEvent event) { handleClicks(event); }
     });
+    
+    graphicsPanel.add(dosGraphics);
+    this.add(graphicsPanel, BorderLayout.CENTER);
     
     // status bar
     add(statusBar, BorderLayout.SOUTH);
@@ -239,11 +248,11 @@ public class TilesEditorWindow extends JFrame {
   public void changeTiles() {
 
     // mutate the TileAttributes and create a new tileset.
-    this.attrs = TileOptions.getOptions();
-    this.tileset = OldTilesetLoader.fromAttributes(this.attrs);
+    attrs = TileOptions.getOptions();
+    tileset = OldTilesetLoader.fromAttributes(attrs);
 
     // create a new DosGraphics instance, but keep the old palette
-    int[][] rgbPalette = this.dosGraphics.getRgbPalette();
+    int[][] rgbPalette = dosGraphics.getRgbPalette();
     graphicsPanel.remove(dosGraphics);
     dosGraphics = createDosGraphics();
     dosGraphics.setRgbPalette(rgbPalette);
@@ -348,16 +357,11 @@ public class TilesEditorWindow extends JFrame {
     final JMenuItem jmSave = new JMenuItem("Save");
     final JMenuItem jmSaveAs = new JMenuItem("Save As..");
     final JMenuItem jmReload = new JMenuItem("Reload");
-    final JMenuItem jmChange = new JMenuItem("Change settings...");
 
     final JMenu toolsMenu = new JMenu("Tools");
 
     final JMenuItem jmSwap = new JMenuItem("Swap transparency");
     final JMenuItem jmBlacken = new JMenuItem("Blacken");
-    
-    final JMenu viewMenu = new JMenu("View");
-    final JMenuItem gridShow = new JCheckBoxMenuItem("Grid");
-    gridShow.setSelected(false);
 
     jmOpen.addActionListener(new ActionListener() {
       public void actionPerformed(ActionEvent event) {
@@ -390,12 +394,6 @@ public class TilesEditorWindow extends JFrame {
         }
       }
     });
-    
-    jmChange.addActionListener(new ActionListener() {
-      public void actionPerformed(ActionEvent event) {
-        changeTiles();
-      }
-    });
 
     jmSwap.addActionListener(new ActionListener() {
       public void actionPerformed(ActionEvent event) {
@@ -411,32 +409,43 @@ public class TilesEditorWindow extends JFrame {
       }
     });
     
-    gridShow.addActionListener(new ActionListener() {
-      public void actionPerformed(ActionEvent event) {
-        System.out.println("grid show: "+ gridShow.isSelected());
-        dosGraphics.setShowGrid(gridShow.isSelected());
-        dosGraphics.repaint();
-      }
-    });
-    
     fileMenu.add(jmOpen);
     fileMenu.add(jmSave);
     fileMenu.add(jmSaveAs);
-    fileMenu.add(jmReload);
-    fileMenu.addSeparator();
-    fileMenu.add(jmChange);  
+    fileMenu.add(jmReload); 
     mainMenu.add(fileMenu);
     
     toolsMenu.add(jmSwap);
     toolsMenu.add(jmBlacken); 
     mainMenu.add(toolsMenu);
-    
-    viewMenu.add(gridShow);
-    mainMenu.add(viewMenu);
        
     return mainMenu;
   }
   
+  private JToolBar mainToolbar() {
+  	
+    final JToolBar mainToolbar = new JToolBar();
+    final JToggleButton gridShow = new JToggleButton("Grid");
+    final JButton changeSettings = new JButton("Settings");
+    
+    gridShow.addChangeListener(new ChangeListener() {
+      public void stateChanged(ChangeEvent e) {
+      	System.out.println("grid show: "+ gridShow.isSelected());
+        dosGraphics.setShowGrid(gridShow.isSelected());
+        dosGraphics.repaint();
+      }
+    });
+    
+    changeSettings.addActionListener(new ActionListener() {
+      public void actionPerformed(ActionEvent e) { changeTiles(); }
+    });
+    
+    mainToolbar.add(gridShow);
+    mainToolbar.add(changeSettings);
+    mainToolbar.setFloatable(false);
+    
+    return mainToolbar;
+  }
   
   public Tileset getTileSet() {
     return this.tileset;

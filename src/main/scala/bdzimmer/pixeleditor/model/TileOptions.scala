@@ -36,6 +36,7 @@ object TileOptions {
     val buttonGroup = new ButtonGroup()
     buttons.foreach(buttonGroup.add(_))
     buttons.foreach(dialog.add(_))
+    buttons.headOption.map(_.setSelected(true))
 
 
     // add an ok button
@@ -49,6 +50,7 @@ object TileOptions {
 
     dialog.pack
     dialog.setModalityType(Dialog.DEFAULT_MODALITY_TYPE)
+    dialog.setLocationRelativeTo(null);
     dialog.setVisible(true)
 
     // wait for it to close
