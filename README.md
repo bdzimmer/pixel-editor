@@ -1,4 +1,4 @@
-# pixel-editor
+# pixel-editor [![Build Status](https://travis-ci.org/bdzimmer/pixel-editor.svg?branch=master)](https://travis-ci.org/bdzimmer/pixel-editor)
 
 Tools for editing limited-palette tiles, sprites, and maps.
 
