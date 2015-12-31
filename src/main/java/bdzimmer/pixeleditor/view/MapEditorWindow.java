@@ -26,6 +26,7 @@ import java.awt.event.MouseWheelEvent;
 import java.awt.event.MouseWheelListener;
 import java.io.File;
 
+import javax.swing.JButton;
 import javax.swing.JCheckBoxMenuItem;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
@@ -33,21 +34,25 @@ import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
+import javax.swing.JToggleButton;
+import javax.swing.JToolBar;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 
 
 
 public class MapEditorWindow extends JFrame {
-  
+
   private static final long serialVersionUID = 0; // Meaningless junk.
-  
+
   private static final int TILE_SIZE = 16;
-  
+
   private final String mapsDir;
-  
+
   private Map map;
   public String mapFileName;
   private final TilesEditorWindow tilesEditorWindow;
-  
+
   private final JCheckBoxMenuItem jmHasParallax = new JCheckBoxMenuItem("Parallax Layer");
   private MapViewPanel mapViewPanel;
 
@@ -57,7 +62,7 @@ public class MapEditorWindow extends JFrame {
 
   /**
    * Create a new MapEditorWindow.
-   * 
+   *
    * @param mapsDir       main content directory
    * @param map           Map to display
    * @param fileName      file name of map to load
@@ -74,41 +79,27 @@ public class MapEditorWindow extends JFrame {
     this.map = map;
     this.mapFileName = fileName;
     this.tilesEditorWindow = tilesEditorWindow;
-    
+
     updateTitle();
 
+    // main menu
     setJMenuBar(mainMenu());
-    
-    // listener for scrolling with arrow keys
-    setFocusable(true);
-    addKeyListener(new KeyAdapter() {
-      public void keyPressed(KeyEvent ae) { handleKeys(ae); }
-    });
 
-    addMouseWheelListener(new MouseWheelListener() {
-      public void mouseWheelMoved(MouseWheelEvent ae) {
-        int notches = ae.getWheelRotation();
-        notches = Integer.signum(notches);
-        zoom(notches);
-      }
-    });
+    // main toolbar
+    add(mainToolbar(), BorderLayout.NORTH);
 
-    // Set the layout manager.
-    setLayout(new BorderLayout());
-
+    // map view
     this.mapViewPanel = new MapViewPanel(
         this.map,
         this.tilesEditorWindow.getTileSet(),
         this.tilesEditorWindow.getDosGraphics().getRgbPalette());
-    add(mapViewPanel, BorderLayout.NORTH);
+    add(mapViewPanel, BorderLayout.CENTER);
 
     add(statusBar, BorderLayout.SOUTH);
     pack();
 
-    // Clicking, dragging on map to get / set tiles
-    // Moving mouse updates coordinate view--
-    mapViewPanel.getDosGraphics().addMouseMotionListener(new MouseMotionListener() {
-
+    // dragging and moving mouse
+    mapViewPanel.addMouseMotionListener(new MouseMotionListener() {
       public void mouseDragged(MouseEvent event) {
         handleClicks(event);
       }
@@ -119,7 +110,6 @@ public class MapEditorWindow extends JFrame {
             mapViewPanel.vud + (int) (event.getY() / (TILE_SIZE * mapViewPanel.scale)),
             "");
       }
-
     });
 
     // clicking mouse
@@ -127,12 +117,26 @@ public class MapEditorWindow extends JFrame {
       public void mousePressed(MouseEvent me) { handleClicks(me); }
     });
 
-   
+    mapViewPanel.addMouseWheelListener(new MouseWheelListener() {
+      public void mouseWheelMoved(MouseWheelEvent ae) {
+        int notches = ae.getWheelRotation();
+        notches = Integer.signum(notches);
+        zoom(notches);
+      }
+    });
+
+    // listener for scrolling with arrow keys
+    setFocusable(true);
+    addKeyListener(new KeyAdapter() {
+      public void keyPressed(KeyEvent ae) { handleKeys(ae); }
+    });
+
     setResizable(false);
     setVisible(true);
     repaint();
 
   }
+
 
   // / helper functions for handling events
   // ------------------------------------------------------
@@ -157,7 +161,7 @@ public class MapEditorWindow extends JFrame {
     if (ctlr < 0 || ctlr > 127) {
       return;
     }
-     
+
     if (!ae.isMetaDown()) {
       if (overlayEdit == 0) {
         map.map[ctud][ctlr] = Main.currentTile; // setting tile
@@ -176,12 +180,14 @@ public class MapEditorWindow extends JFrame {
         Main.currentTile = map.paraMap[ctud][ctlr];
       }
     }
- 
+
   }
-  
-  
+
+
   private void handleKeys(KeyEvent ae) {
-    
+
+    System.out.println("key pressed");
+
     if (ae.getKeyCode() == KeyEvent.VK_UP) {
       if (!ae.isAltDown()) {
         mapViewPanel.vud -= 1;
@@ -229,7 +235,7 @@ public class MapEditorWindow extends JFrame {
     }
 
     repaint();
-    
+
   }
 
   // //// loading and saving maps
@@ -243,9 +249,9 @@ public class MapEditorWindow extends JFrame {
     JFileChooser jfc = new JFileChooser();
     jfc.setDialogType(JFileChooser.OPEN_DIALOG);
     jfc.setCurrentDirectory(new File(mapsDir));
-    
-    if (jfc.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) { 
-      
+
+    if (jfc.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) {
+
       File selFile = jfc.getSelectedFile();
       try {
         map = new Map(selFile);
@@ -260,7 +266,7 @@ public class MapEditorWindow extends JFrame {
         mapViewPanel.updateGraphics();
         mapViewPanel.repaint();
         repaint();
-        
+
       } catch (NullPointerException e) {
         System.err.println(e);
         return;
@@ -276,11 +282,11 @@ public class MapEditorWindow extends JFrame {
     jfc.setDialogType(JFileChooser.SAVE_DIALOG);
     jfc.setCurrentDirectory(new File(mapsDir));
     jfc.setSelectedFile(new File(mapFileName));
-    
+
     // call up the dialog and examine what it returns.
-    
-    if (jfc.showSaveDialog(null) == JFileChooser.APPROVE_OPTION) { 
-      
+
+    if (jfc.showSaveDialog(null) == JFileChooser.APPROVE_OPTION) {
+
       File mapFile = jfc.getSelectedFile();
       try {
         map.save(mapFile); // getSelectedFile returns the file that was selected
@@ -291,14 +297,14 @@ public class MapEditorWindow extends JFrame {
       }
     }
   }
-  
-  
+
+
   // update the title
   private void updateTitle() {
-    setTitle(map.mapDesc.trim() + " (" + map.tileFileName + ") - " + mapFileName);  
+    setTitle(map.mapDesc.trim() + " (" + map.tileFileName + ") - " + mapFileName);
   }
-  
-  
+
+
   // updating graphics
   // --------------------------------------------------------
 
@@ -306,46 +312,38 @@ public class MapEditorWindow extends JFrame {
     mapViewPanel.setTileset(tilesEditorWindow.getTileSet());
     mapViewPanel.updateGraphics();
     pack();
-    repaint(); 
+    repaint();
   }
 
- 
+
   public void paint(Graphics gr) {
     super.paint(gr);
-    mapViewPanel.repaint();  
+    mapViewPanel.repaint();
   }
- 
+
+
   private JMenuBar mainMenu() {
-    
-    // ///////////// menu stuff ///////////////////////
 
     JMenuBar mainMenu = new JMenuBar();
 
     JMenu fileMenu = new JMenu("File");
-    
+
     JMenuItem jmNew = new JMenuItem("New");
     JMenuItem jmOpen = new JMenuItem("Open");
     JMenuItem jmSave = new JMenuItem("Save");
     JMenuItem jmSaveAs = new JMenuItem("Save As");
 
     JMenu editMenu = new JMenu("Edit");
-    
+
     JMenuItem jmSetTitle = new JMenuItem("Set title...");
-    JMenuItem jmEditOverlay = new JMenuItem("Editing Background Layer");
-    final JCheckBoxMenuItem jmDispOver = new JCheckBoxMenuItem("Display Overlay Layer");
-    final JCheckBoxMenuItem jmDispBack = new JCheckBoxMenuItem("Display Background Layer");
-    final JCheckBoxMenuItem jmDispBounds = new JCheckBoxMenuItem("Display Bounds");
-    
-    jmDispOver.setSelected(true);
-    jmDispBack.setSelected(true);
-    jmDispBounds.setSelected(false);
+
     jmHasParallax.setSelected(false);
-    
+
     JMenu viewMenu = new JMenu("View");
-    
+
     JMenuItem fullMap =  new JMenuItem("Full Map");
-    
-    
+
+
     jmNew.addActionListener(new ActionListener() {
       public void actionPerformed(ActionEvent ae) {
         MapEditorWindow.this.map.erase();
@@ -382,19 +380,78 @@ public class MapEditorWindow extends JFrame {
       }
     });
 
-    jmEditOverlay.addActionListener(new ActionListener() {
+    fullMap.addActionListener(new ActionListener() {
       public void actionPerformed(ActionEvent ae) {
+        Tileset tiles = MapEditorWindow.this.tilesEditorWindow.getTileSet();
+        Palette palette = Tileset.extractPalette(
+            tiles.palettes().apply(0),
+            MapEditorWindow.this.tilesEditorWindow.getDosGraphics().getRgbPalette());
+        new ImageWindow(MapEditorWindow.this.map.image(tiles, palette));
+      }
+    });
+
+
+    fileMenu.add(jmNew);
+    fileMenu.add(jmOpen);
+    fileMenu.add(jmSave);
+    fileMenu.add(jmSaveAs);
+    mainMenu.add(fileMenu);
+
+    editMenu.add(jmSetTitle);
+    editMenu.addSeparator();
+    editMenu.add(jmHasParallax);
+    mainMenu.add(editMenu);
+
+    viewMenu.add(fullMap);
+    mainMenu.add(viewMenu);
+
+    return mainMenu;
+
+  }
+
+
+  private JToolBar mainToolbar() {
+
+    final JToolBar mainToolbar = new JToolBar();
+    final JToggleButton gridShow = new JToggleButton("Grid");
+    gridShow.setFocusable(false);
+
+    final JButton editLayer = new JButton("E Back");
+    editLayer.setFocusable(false);
+
+    final JToggleButton dispBack = new JToggleButton("Back");
+    dispBack.setSelected(true);
+    dispBack.setFocusable(false);
+
+    final JToggleButton dispOver = new JToggleButton("Ovl");
+    dispOver.setSelected(true);
+    dispOver.setFocusable(false);
+
+    final JToggleButton dispBounds = new JToggleButton("Bounds");
+    dispBounds.setFocusable(false);
+
+
+    gridShow.addChangeListener(new ChangeListener() {
+      public void stateChanged(ChangeEvent e) {
+        System.out.println("grid show: "+ gridShow.isSelected());
+        mapViewPanel.setDispGridlines(gridShow.isSelected());
+        repaint();
+      }
+    });
+
+
+    editLayer.addActionListener(new ActionListener() {
+      public void actionPerformed(ActionEvent e) {
         if (overlayEdit == 0) {
-          ((JMenuItem) ae.getSource()).setText("Editing Overlay Layer");
+          editLayer.setText("E Ovl");
           overlayEdit = 1;
           mapViewPanel.setParallaxEdit(false);
         } else if (overlayEdit == 1) {
-          ((JMenuItem) ae.getSource()).setText("Editing Parallax Layer");
+          editLayer.setText("E Px");
           overlayEdit = 2;
           mapViewPanel.setParallaxEdit(true);
-
         } else if (overlayEdit == 2) {
-          ((JMenuItem) ae.getSource()).setText("Editing Background Layer");
+          editLayer.setText("E Back");
           overlayEdit = 0;
           mapViewPanel.setParallaxEdit(false);
         }
@@ -402,63 +459,36 @@ public class MapEditorWindow extends JFrame {
       }
     });
 
-    // repaint map when choosing whether to display layers / bounds
-    jmDispOver.addActionListener(new ActionListener() {
-      public void actionPerformed(ActionEvent ae) {
-        System.out.println(jmDispOver.isSelected());
-        mapViewPanel.setDispOver(jmDispOver.isSelected());
+    dispBack.addChangeListener(new ChangeListener() {
+      public void stateChanged(ChangeEvent e) {
+        mapViewPanel.setDispBack(dispBack.isSelected());
         repaint();
       }
     });
 
-    jmDispBack.addActionListener(new ActionListener() {
-      public void actionPerformed(ActionEvent ae) {
-        System.out.println(jmDispBack.isSelected());
-        mapViewPanel.setDispBack(jmDispBack.isSelected());
+    dispOver.addChangeListener(new ChangeListener() {
+      public void stateChanged(ChangeEvent e) {
+        mapViewPanel.setDispOver(dispOver.isSelected());
         repaint();
       }
     });
 
-    jmDispBounds.addActionListener(new ActionListener() {
-      public void actionPerformed(ActionEvent ae) {
-        mapViewPanel.setDispBounds(jmDispBounds.isSelected());
+    dispBounds.addChangeListener(new ChangeListener() {
+      public void stateChanged(ChangeEvent e) {
+        mapViewPanel.setDispBounds(dispBounds.isSelected());
         repaint();
       }
     });
-    
-    fullMap.addActionListener(new ActionListener() {
-      public void actionPerformed(ActionEvent ae) {    
-        Tileset tiles = MapEditorWindow.this.tilesEditorWindow.getTileSet(); 
-        Palette palette = Tileset.extractPalette(
-            tiles.palettes().apply(0),
-            MapEditorWindow.this.tilesEditorWindow.getDosGraphics().getRgbPalette());
-        new ImageWindow(MapEditorWindow.this.map.image(tiles, palette));
-      }
-    });
-    
-    
-    fileMenu.add(jmNew);
-    fileMenu.add(jmOpen);
-    fileMenu.add(jmSave);
-    fileMenu.add(jmSaveAs);   
-    mainMenu.add(fileMenu);
-    
-    editMenu.add(jmSetTitle);
-    editMenu.addSeparator();
-    editMenu.add(jmEditOverlay);
-    editMenu.addSeparator();   
-    editMenu.add(jmDispOver);
-    editMenu.add(jmDispBack);
-    editMenu.add(jmDispBounds);
-    editMenu.addSeparator();
-    editMenu.add(jmHasParallax); 
-    mainMenu.add(editMenu);
-    
-    viewMenu.add(fullMap); 
-    mainMenu.add(viewMenu);
-    
-    return mainMenu;
-    
+
+    mainToolbar.add(gridShow);
+    mainToolbar.add(editLayer);
+    mainToolbar.add(dispBack);
+    mainToolbar.add(dispOver);
+    mainToolbar.add(dispBounds);
+    mainToolbar.setFloatable(false);
+
+    return mainToolbar;
+
   }
 
 }

@@ -99,7 +99,7 @@ public class TilesEditorWindow extends JFrame {
     setJMenuBar(mainMenu());
     
     // toolbar
-    this.add(mainToolbar(), BorderLayout.NORTH);
+    add(mainToolbar(), BorderLayout.NORTH);
     
     // tileset visualization
     dosGraphics = createDosGraphics();
@@ -111,7 +111,7 @@ public class TilesEditorWindow extends JFrame {
     });
     
     graphicsPanel.add(dosGraphics);
-    this.add(graphicsPanel, BorderLayout.CENTER);
+    add(graphicsPanel, BorderLayout.CENTER);
     
     // status bar
     add(statusBar, BorderLayout.SOUTH);
@@ -435,10 +435,12 @@ public class TilesEditorWindow extends JFrame {
         dosGraphics.repaint();
       }
     });
+    gridShow.setFocusable(false);
     
     changeSettings.addActionListener(new ActionListener() {
       public void actionPerformed(ActionEvent e) { changeTiles(); }
     });
+    changeSettings.setFocusable(false);
     
     mainToolbar.add(gridShow);
     mainToolbar.add(changeSettings);

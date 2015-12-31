@@ -23,6 +23,7 @@ import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JToggleButton;
 import javax.swing.JToolBar;
 
 
@@ -35,6 +36,7 @@ public class ZoomedTileWindow extends JFrame {
   private int currentTile;
   private int[][] overlayTile;
   private int penMode;
+  private boolean showGridlines;
 
   private PaletteWindow paletteWindow;
 
@@ -54,7 +56,7 @@ public class ZoomedTileWindow extends JFrame {
 
   /**
    * Create a new ZoomedTileWindow.
-   * 
+   *
    * @param title         title for window
    * @param tile          tile to display and edit
    * @param rgbPalette    rgb palette
@@ -63,22 +65,24 @@ public class ZoomedTileWindow extends JFrame {
       String title,
       int[][] tile,
       PaletteWindow paletteWindow) {
-    
+
     this.zoomFactor = 8;
-    if (tile != null) {
-      this.tileHeight = tile.length;
-      this.tileWidth = tile[0].length;
-      this.dosGraphics = new DosGraphics(tileHeight * zoomFactor, tileWidth
-          * zoomFactor, 2);
-      tileTile = new DosGraphics(tileHeight * 3, tileWidth * 3, 2);
-    } else {
-      dosGraphics = new DosGraphics(64, 64, 2); 
-      tileTile = new DosGraphics(64, 64, 2);
-    }
 
     this.paletteWindow = paletteWindow;
-    this.tileTile.setRgbPalette(paletteWindow.getDosGraphics().getRgbPalette());
     this.tile = tile;
+
+    if (tile != null) {
+      tileHeight = tile.length;
+      tileWidth = tile[0].length;
+    } else {
+      tileHeight = 16;
+      tileWidth = 16;
+    }
+
+    dosGraphics = createDosGraphics();
+
+    tileTile = new DosGraphics(tileHeight * 3, tileWidth * 3, 2);
+    tileTile.setRgbPalette(paletteWindow.getDosGraphics().getRgbPalette());
 
     this.setLayout(new BorderLayout(0, 0));
 
@@ -94,9 +98,9 @@ public class ZoomedTileWindow extends JFrame {
 
     graphicsPanel.addMouseListener(new MouseAdapter() {
       public void mousePressed(MouseEvent event) { handleClicks(event, 3); }
-      
+
       // Only repaint the tileWindow when the mouse is released
-      public void mouseReleased(MouseEvent event) { tileWindow.repaint(); } 
+      public void mouseReleased(MouseEvent event) { tileWindow.repaint(); }
     });
 
     JPanel layoutPanel = new JPanel();
@@ -105,17 +109,29 @@ public class ZoomedTileWindow extends JFrame {
     JToolBar buttonsToolBar = new JToolBar();
     buttonsToolBar.setLayout(new GridLayout(4, 4, 0, 0)); // for now
 
+    // Grid button
+    final JToggleButton gridShow = new JToggleButton("Grid");
+    gridShow.addActionListener(new ActionListener() {
+      public void actionPerformed(ActionEvent e) {
+        showGridlines = gridShow.isSelected();
+        dosGraphics.setShowGrid(showGridlines);
+        dosGraphics.repaint();
+      }
+    });
+    gridShow.setSelected(showGridlines);
+    buttonsToolBar.add(gridShow);
+
     // Zoom in and out buttons
     JButton zoomIn = new JButton("+");
     buttonsToolBar.add(zoomIn);
     JButton zoomOut = new JButton("-");
     buttonsToolBar.add(zoomOut);
 
-    
+
     ActionListener toolsHandler = new ActionListener() {
       public void actionPerformed(ActionEvent event) { handleTools(event); }
     };
-    
+
     // Lighten
     JButton lighten = new JButton("Lighten");
     lighten.addActionListener(toolsHandler);
@@ -251,7 +267,7 @@ public class ZoomedTileWindow extends JFrame {
         setZoomFactor(zoomFactor - 1);
       }
     });
-    
+
     setTitle(title);
     setVisible(true);
     setResizable(false);
@@ -341,19 +357,19 @@ public class ZoomedTileWindow extends JFrame {
     this.tileWindow.repaint();
   }
 
-  
+
   private void xorProperyBits(int bits) {
     if (tileWindow.getTileSet().properties().length > 0) {
       int prop = tileWindow.getTileSet().properties()[currentTile].value();
       tileWindow.getTileSet().properties()[currentTile] = new TileProperties(prop ^ bits);
       updateTileProps();
-      System.out.println("toggled tile property");   
+      System.out.println("toggled tile property");
     } else {
       System.out.println("no tile properties!");
     }
   }
-  
-  
+
+
   private int[][] copyTile() {
     int[][] tempTile = new int[this.tile.length][this.tile[0].length];
     for (int i = 0; i < this.tile.length; i++) {
@@ -391,7 +407,7 @@ public class ZoomedTileWindow extends JFrame {
         }
       }
       // Only repaint the tileWindow when the mouse is released
-      // this.tileWindow.repaint(); 
+      // this.tileWindow.repaint();
       this.repaint();
     }
 
@@ -418,7 +434,7 @@ public class ZoomedTileWindow extends JFrame {
 
   /**
    * Set the tile to view and edit.
-   * 
+   *
    * @param tileSet       array describing tile set
    * @param whichTile     which tile in the tile set
    */
@@ -430,10 +446,10 @@ public class ZoomedTileWindow extends JFrame {
     updateGraphics();
   }
 
-  
+
   /**
    * Set the tile to view and edit.
-   * 
+   *
    * @param tempTile      array describing the tile
    */
   public void setTile(int[][] tempTile) {
@@ -470,11 +486,18 @@ public class ZoomedTileWindow extends JFrame {
       tileHeight = tile.length;
       tileWidth = tile[0].length;
     }
-    dosGraphics = new DosGraphics(tileHeight * zoomFactor, tileWidth * zoomFactor, 2);
-    dosGraphics.setRgbPalette(paletteWindow.getDosGraphics().getRgbPalette());
+    dosGraphics = createDosGraphics();
     graphicsPanel.add(dosGraphics);
     pack();
     repaint();
+  }
+
+  private DosGraphics createDosGraphics() {
+    DosGraphics dg = new DosGraphics(tileHeight * zoomFactor, tileWidth * zoomFactor, 2);
+    dg.setRgbPalette(paletteWindow.getDosGraphics().getRgbPalette());
+    dg.setGridDimensions(zoomFactor, zoomFactor);
+    dg.setShowGrid(showGridlines);
+    return dg;
   }
 
   private void updateTileProps() {
@@ -485,7 +508,7 @@ public class ZoomedTileWindow extends JFrame {
 
     Color onColor = new Color(128, 0, 128);
     Color offColor = new Color(0, 0, 0);
-    
+
     if ((tpb & 1) == 0) {
       tpBottom.setBackground(onColor);
     } else {
@@ -524,7 +547,7 @@ public class ZoomedTileWindow extends JFrame {
 
   }
 
-  
+
   /**
    * Draw the component.
    */
@@ -544,7 +567,7 @@ public class ZoomedTileWindow extends JFrame {
       }
     }
     tileTile.repaint();
-    
+
     // draw the tileprops.
     this.updateTileProps();
   }

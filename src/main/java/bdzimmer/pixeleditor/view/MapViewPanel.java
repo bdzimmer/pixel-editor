@@ -30,6 +30,7 @@ public class MapViewPanel extends JPanel {
   private boolean dispOver = true;
   private boolean dispBack = true;
   private boolean dispBounds = false;
+  private boolean dispGridlines = false;
 
   private Map map;
 
@@ -42,19 +43,17 @@ public class MapViewPanel extends JPanel {
 
   /**
    * Create a new map view.
-   * 
+   *
    * @param map           map for the view
    * @param tileSet       tiles to use when displaying the map
    * @param rgbPalette    palette for displaying the map
    */
   public MapViewPanel(Map map, Tileset tileset, int[][] rgbPalette) {
-
     this.map = map;
     this.tileset = tileset;
     this.rgbPalette = rgbPalette;
 
-    dosGraphics = new DosGraphics(192, 320, this.scale); 
-    dosGraphics.setRgbPalette(this.rgbPalette);
+    dosGraphics = createDosGraphics();
     add(dosGraphics, BorderLayout.SOUTH);
   }
 
@@ -64,23 +63,32 @@ public class MapViewPanel extends JPanel {
    * Update the DosGraphics instance (used when changing scale).
    */
   public void updateGraphics() {
+    remove(dosGraphics);
+    dosGraphics = createDosGraphics();
+    add(dosGraphics);
+  }
 
-    remove(this.dosGraphics);
-    dosGraphics = new DosGraphics(
-        numVerticalTiles * 16,
-        numHorizontalTiles * 16,
+
+  private DosGraphics createDosGraphics() {
+
+    DosGraphics dg =  new DosGraphics(
+        numVerticalTiles * tileset.height(),
+        numHorizontalTiles * tileset.width(),
         scale);
 
-    dosGraphics.setRgbPalette(rgbPalette);
-    dosGraphics.updateClut();
-    add(dosGraphics);
+    dg.setGridDimensions(tileset.width(), tileset.height());
+    dg.setShowGrid(dispGridlines);
+    dg.setRgbPalette(rgbPalette);
+    dg.updateClut();
 
+    return dg;
   }
+
 
   private void drawMap() {
     if (this.tileset != null) {
       // Draw map on screen.
-  
+
       if (this.parallaxEdit) {
 
         for (int i = 0; i < 12; i++) {
@@ -121,7 +129,7 @@ public class MapViewPanel extends JPanel {
             }
           }
         }
-        
+
         if (this.dispOver) {
           for (int i = 0; i < 12; i++) {
             for (int j = 0; j < 20; j++) {
@@ -131,7 +139,7 @@ public class MapViewPanel extends JPanel {
                 curTile = map.overMap[i + vud][j + vlr];
               } else {
                 curTile = 0;
-              } 
+              }
               if (curTile > 0) {
                 this.dosGraphics.drawTileTrans(
                     tileset.tiles()[curTile].pixels(),
@@ -165,20 +173,20 @@ public class MapViewPanel extends JPanel {
 
     // Bounds drawing
     if (this.dispBounds && this.tileset != null) {
-        
+
       dgGraphics.setColor(new Color(dosGraphics.getPalette()[255]));
       for (int i = 0; i < 12; i++) {
         for (int j = 0; j < 20; j++) {
-          
+
           if (this.dispBack) {
             int curTile;
-            if ((vud + i) <= 127 && (vud + i) >= 0 
+            if ((vud + i) <= 127 && (vud + i) >= 0
                 && (vlr + j) <= 127 && (vlr + j) >= 0) {
               curTile = map.map[i + vud][j + vlr];
             } else {
               curTile = 0;
             }
-            
+
             if ((tileset.properties()[curTile].value() & 1) == 0) {
               dgGraphics.drawLine(
                   j * tileset.width()  * scale,
@@ -218,9 +226,9 @@ public class MapViewPanel extends JPanel {
           }
         }
       }
-          
+
       dgGraphics.setColor(new Color(dosGraphics.getPalette()[10]));
-      
+
       if (dispOver) {
         for (int i = 0; i < 12; i++) {
           for (int j = 0; j < 20; j++) {
@@ -278,9 +286,9 @@ public class MapViewPanel extends JPanel {
   public void setMap(Map map) {
     this.map = map;
   }
-  
-  
-  
+
+
+
   public int getScale() {
     return this.scale;
   }
@@ -321,6 +329,11 @@ public class MapViewPanel extends JPanel {
     this.dispBounds = dispBounds;
   }
 
+  public void setDispGridlines(boolean dispGridlines) {
+    this.dispGridlines = dispGridlines;
+    this.dosGraphics.setShowGrid(this.dispGridlines);
+  }
+
   public boolean isDispOver() {
     return dispOver;
   }
@@ -332,11 +345,11 @@ public class MapViewPanel extends JPanel {
   public void setParallaxEdit(boolean parallaxEdit) {
     this.parallaxEdit = parallaxEdit;
   }
-  
+
   public void setTileset(Tileset tileset) {
     this.tileset = tileset;
   }
-  
+
   public DosGraphics getDosGraphics() {
     return this.dosGraphics;
   }

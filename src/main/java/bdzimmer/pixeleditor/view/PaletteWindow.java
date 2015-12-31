@@ -3,6 +3,7 @@
 package bdzimmer.pixeleditor.view;
 
 
+import bdzimmer.pixeleditor.controller.PaletteUtils;
 import bdzimmer.pixeleditor.model.DosGraphics;
 
 import java.awt.BorderLayout;
@@ -95,8 +96,8 @@ class PaletteWindow extends JFrame {
 
         int clickedColor = (int) ((event.getY() / 16) * 16) + (int) (event.getX() / 16);
         if (clickedColor < 256 && clickedColor >= 0) {
-          if (event.isMetaDown()) {      
-            
+          
+          if (event.isMetaDown()) {         
             // right click - grab color
             Main.currentColor = clickedColor; 
 
@@ -105,26 +106,12 @@ class PaletteWindow extends JFrame {
             
             int[][] pal = dosGraphics.getRgbPalette();
 
-            if (event.isAltDown()) {
-              
-              // interpolate between current color and clicked color
-              int numColors = Math.abs(clickedColor - Main.currentColor);
-              int direction = (clickedColor > Main.currentColor) ? 1 : -1;
-              
-              for (int i = 1; i < numColors; i++) {
-                int curColor = Main.currentColor + i * direction;
-                pal[curColor][0] = pal[Main.currentColor][0] + (int)((pal[clickedColor][0] - pal[Main.currentColor][0]) / (float)numColors * i);
-                pal[curColor][1] = pal[Main.currentColor][1] + (int)((pal[clickedColor][1] - pal[Main.currentColor][1]) / (float)numColors * i);
-                pal[curColor][2] = pal[Main.currentColor][2] + (int)((pal[clickedColor][2] - pal[Main.currentColor][2]) / (float)numColors * i);
-              }
-              
-            } else {
-              
-              // dosGraphics.getPalette()[clickedColor] = dosGraphics.getPalette()[Main.currentColor];
+            if (event.isAltDown()) {             
+              PaletteUtils.interpolateLinear(pal, Main.currentColor, clickedColor);
+            } else {             
               pal[clickedColor][0] = pal[Main.currentColor][0];
               pal[clickedColor][1] = pal[Main.currentColor][1];
-              pal[clickedColor][2] = pal[Main.currentColor][2];
-              
+              pal[clickedColor][2] = pal[Main.currentColor][2];           
             }
             
             // update after done updating the colors / current selection
@@ -135,9 +122,7 @@ class PaletteWindow extends JFrame {
           repaint();
           
         }
-
       }
-
     });
 
     JPanel sp = new JPanel();
