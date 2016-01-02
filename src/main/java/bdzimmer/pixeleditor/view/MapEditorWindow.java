@@ -34,10 +34,15 @@ import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
+import javax.swing.JTextField;
 import javax.swing.JToggleButton;
 import javax.swing.JToolBar;
+import javax.swing.JSeparator;
+import javax.swing.SwingConstants;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 
 
 
@@ -53,8 +58,10 @@ public class MapEditorWindow extends JFrame {
   public String mapFileName;
   private final TilesEditorWindow tilesEditorWindow;
 
-  private final JCheckBoxMenuItem jmHasParallax = new JCheckBoxMenuItem("Parallax Layer");
   private MapViewPanel mapViewPanel;
+
+  // GUI components that modify the Map object
+  private final JCheckBoxMenuItem jmHasParallax = new JCheckBoxMenuItem("Parallax Layer");
 
   private int overlayEdit;
   private StatusBar statusBar = new StatusBar();
@@ -97,6 +104,8 @@ public class MapEditorWindow extends JFrame {
 
     add(statusBar, BorderLayout.SOUTH);
     pack();
+
+    mapViewPanel.setToolTipText("<html>right click: grab tile<br />left click: set tile<br />mouse wheel: zoom<br />arrow keys: scroll</html>");
 
     // dragging and moving mouse
     mapViewPanel.addMouseMotionListener(new MouseMotionListener() {
@@ -335,7 +344,7 @@ public class MapEditorWindow extends JFrame {
 
     JMenu editMenu = new JMenu("Edit");
 
-    JMenuItem jmSetTitle = new JMenuItem("Set title...");
+    JMenuItem jmSetTitle = new JMenuItem("Set title and tiles file...");
 
     jmHasParallax.setSelected(false);
 
@@ -430,7 +439,6 @@ public class MapEditorWindow extends JFrame {
     final JToggleButton dispBounds = new JToggleButton("Bounds");
     dispBounds.setFocusable(false);
 
-
     gridShow.addChangeListener(new ChangeListener() {
       public void stateChanged(ChangeEvent e) {
         System.out.println("grid show: "+ gridShow.isSelected());
@@ -438,7 +446,6 @@ public class MapEditorWindow extends JFrame {
         repaint();
       }
     });
-
 
     editLayer.addActionListener(new ActionListener() {
       public void actionPerformed(ActionEvent e) {

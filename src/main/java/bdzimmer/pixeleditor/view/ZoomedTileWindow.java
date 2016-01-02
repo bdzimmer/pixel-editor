@@ -89,6 +89,8 @@ public class ZoomedTileWindow extends JFrame {
     graphicsPanel.add(dosGraphics, BorderLayout.SOUTH);
     this.add(graphicsPanel);
 
+    graphicsPanel.setToolTipText("<html>right click: grab color<br />left click: set color</html>");
+
     graphicsPanel.addMouseMotionListener(new MouseMotionListener() {
       public void mouseDragged(MouseEvent event) { handleClicks(event, 3); }
       public void mouseMoved(MouseEvent arg0) {
