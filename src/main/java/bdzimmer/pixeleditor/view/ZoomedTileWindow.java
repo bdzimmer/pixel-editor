@@ -314,7 +314,7 @@ public class ZoomedTileWindow extends JFrame {
     } else if ("Fill".equals(commandString)) {
       for (int i = 0; i < tile.length; i++) {
         for (int j = 0; j < tile[0].length; j++) {
-          tile[i][j] = Main.currentColor;
+          tile[i][j] = paletteWindow.getColorIndex();
         }
       }
 
@@ -394,18 +394,18 @@ public class ZoomedTileWindow extends JFrame {
       if (tud < this.tile.length && tlr < this.tile[0].length) {
         if (!event.isMetaDown()) { // right click
           if (this.penMode == 0) { // normal pen
-            this.tile[tud][tlr] = Main.currentColor;
-            System.out.println("Set color " + Main.currentColor);
+            this.tile[tud][tlr] = paletteWindow.getColorIndex();
+            System.out.println("Set color " + paletteWindow.getColorIndex());
           } else if (this.penMode == 1) {
             this.tile[tud][tlr] = this.overlayTile[tud][tlr];
           } else if (this.penMode == 2) {
-            FloodFill.floodFill(this.tile, Main.currentColor, tud, tlr);
+            FloodFill.floodFill(this.tile, paletteWindow.getColorIndex(), tud, tlr);
           }
         } else {
-          Main.currentColor = tile[tud][tlr];
+          paletteWindow.setColorIndex(tile[tud][tlr]);
           paletteWindow.repaint();
           paletteWindow.toFront();
-          System.out.println("Got color " + Main.currentColor);
+          System.out.println("Got color " + paletteWindow.getColorIndex());
         }
       }
       // Only repaint the tileWindow when the mouse is released

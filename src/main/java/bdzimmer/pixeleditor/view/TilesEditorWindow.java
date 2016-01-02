@@ -8,6 +8,7 @@ package bdzimmer.pixeleditor.view;
 import bdzimmer.pixeleditor.controller.OldTilesetLoader;
 import bdzimmer.pixeleditor.model.DosGraphics;
 import bdzimmer.pixeleditor.model.Palette;
+import bdzimmer.pixeleditor.model.TileContainer;
 import bdzimmer.pixeleditor.model.TileOptions;
 import bdzimmer.pixeleditor.model.Tileset;
 import bdzimmer.pixeleditor.model.TileAttributes;
@@ -23,7 +24,6 @@ import java.awt.event.MouseEvent;
 import java.io.File;
 
 import javax.swing.JButton;
-import javax.swing.JCheckBoxMenuItem;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JMenu;
@@ -52,12 +52,14 @@ public class TilesEditorWindow extends JFrame {
   private String tileFilename;
 
   private DosGraphics dosGraphics;
-  private PaletteWindow paletteWindow;
   private ZoomedTileWindow zoomWindow;
+
+  private final PaletteWindow paletteWindow;
+  private final TileContainer tileContainer;
 
   private JPanel graphicsPanel = new JPanel();
 
-  private int currentTile;
+  // private int currentTile;
 
 
   /**
@@ -69,6 +71,7 @@ public class TilesEditorWindow extends JFrame {
    * @param title               general title for window
    * @param fileName            file name of tiles (for save menu option)
    * @param paletteWindow       palette window to edit
+   * @param tileContainer       tile container for current tile
    */
   public TilesEditorWindow(
       String tilesDir,
@@ -76,7 +79,8 @@ public class TilesEditorWindow extends JFrame {
       TileAttributes attributes,
       String title,
       String filename,
-      PaletteWindow paletteWindow) {
+      PaletteWindow paletteWindow,
+      TileContainer tileContainer) {
 
     this.tilesDir = tilesDir;
     this.tileset = tiles;
@@ -87,6 +91,7 @@ public class TilesEditorWindow extends JFrame {
     updateTitle();
 
     this.paletteWindow = paletteWindow;
+    this.tileContainer = tileContainer;
 
     // UI stuff
 
@@ -150,50 +155,59 @@ public class TilesEditorWindow extends JFrame {
     if (event.isMetaDown()) {
       // left click -- set tile in window
 
-      this.currentTile = selectedTile;
-      Main.currentTile = currentTile;
-      Main.currentTileBitmap = tileset.tiles()[currentTile].pixels();
-
-      if (zoomWindow == null || !zoomWindow.isVisible()) {
-        zoomWindow = new ZoomedTileWindow(
-            "Zoom",
-            tileset.tiles()[currentTile].pixels(),
-            paletteWindow);
-
-        zoomWindow.setTileWindow(this);
-        zoomWindow.setLocationRelativeTo(this);
-      } else {
-        zoomWindow.setTile(tileset.tiles()[currentTile].pixels(), currentTile);
-      }
-
-      zoomWindow.toFront();
+      selectTile(selectedTile);
 
     } else {
 
       int newTile = selectedTile;
 
+      // TODO: move this tile copying logic to a controller class
+
       // Calculate maximum size we can copy
       // The global tile bitmap here seems kind of dumb, but it's there to allow
       // copying tiles across tileset -- important functionality.
 
-      int udlength = Math.min(tileset.height(), Main.currentTileBitmap.length);
-      int lrlength = Math.min(tileset.width(), Main.currentTileBitmap[0].length);
+      int udlength = Math.min(tileset.height(), tileContainer.getTileBitmap().length);
+      int lrlength = Math.min(tileset.width(), tileContainer.getTileBitmap()[0].length);
 
       for (int i = 0; i < udlength; i++) {
         for (int j = 0; j < lrlength; j++) {
-          tileset.tiles()[newTile].pixels()[i][j] = Main.currentTileBitmap[i][j];
+          tileset.tiles()[newTile].pixels()[i][j] = tileContainer.getTileBitmap()[i][j];
         }
       }
 
       // set the copy as the current tile
-      this.currentTile = selectedTile;
-      Main.currentTile = currentTile;
-      Main.currentTileBitmap = tileset.tiles()[currentTile].pixels();
+      tileContainer.setTileIndex(selectedTile);
+      tileContainer.setTileBitmap(tileset.tiles()[selectedTile].pixels());
 
       repaint();
     }
 
-    statusBar.update(0, 0, "" + currentTile);
+    statusBar.update(0, 0, "" + selectedTile);
+
+  }
+
+
+  // select a tile from the set into the tile container
+  // and show it in the ZoomWindow
+  public void selectTile(int selectedTile) {
+
+    // set the current tile
+    tileContainer.setTileIndex(selectedTile);
+    tileContainer.setTileBitmap(tileset.tiles()[selectedTile].pixels());
+
+    // show in zoom window
+    if (zoomWindow == null || !zoomWindow.isVisible()) {
+      zoomWindow = new ZoomedTileWindow(
+          "Zoom",
+          tileset.tiles()[selectedTile].pixels(),
+          paletteWindow);
+      zoomWindow.setTileWindow(this);
+      zoomWindow.setLocationRelativeTo(this);
+    } else {
+      zoomWindow.setTile(tileset.tiles()[selectedTile].pixels(), selectedTile);
+    }
+    zoomWindow.toFront();
 
   }
 
@@ -247,7 +261,7 @@ public class TilesEditorWindow extends JFrame {
    * Show a tile attributes chooser, change the tile set type,
    * resize, and redraw the window.
    */
-  public void changeTiles() {
+  private void changeTiles() {
 
     // mutate the TileAttributes and create a new tileset.
     attrs = TileOptions.getOptions();
@@ -457,6 +471,10 @@ public class TilesEditorWindow extends JFrame {
 
   public DosGraphics getDosGraphics() {
     return this.dosGraphics;
+  }
+
+  public TileContainer getTileContainer() {
+    return this.tileContainer;
   }
 
 }

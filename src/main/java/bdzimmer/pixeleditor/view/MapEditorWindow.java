@@ -34,15 +34,10 @@ import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
-import javax.swing.JTextField;
 import javax.swing.JToggleButton;
 import javax.swing.JToolBar;
-import javax.swing.JSeparator;
-import javax.swing.SwingConstants;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
-import javax.swing.event.DocumentEvent;
-import javax.swing.event.DocumentListener;
 
 
 
@@ -173,21 +168,27 @@ public class MapEditorWindow extends JFrame {
 
     if (!ae.isMetaDown()) {
       if (overlayEdit == 0) {
-        map.map[ctud][ctlr] = Main.currentTile; // setting tile
+        map.map[ctud][ctlr] = tilesEditorWindow.getTileContainer().getTileIndex();
       } else if (overlayEdit == 1) {
-        map.overMap[ctud][ctlr] = Main.currentTile;
+        map.overMap[ctud][ctlr] = tilesEditorWindow.getTileContainer().getTileIndex();
       } else if (overlayEdit == 2) {
-        map.paraMap[ctud][ctlr] = Main.currentTile;
+        map.paraMap[ctud][ctlr] = tilesEditorWindow.getTileContainer().getTileIndex();
       }
       repaint();
+
     } else {
+      int selectedTile = 0;
       if (overlayEdit == 0) {
-        Main.currentTile = map.map[ctud][ctlr]; // getting tile
+        selectedTile = map.map[ctud][ctlr];
       } else if (overlayEdit == 1) {
-        Main.currentTile = map.overMap[ctud][ctlr];
+        selectedTile = map.overMap[ctud][ctlr];
       } else if (overlayEdit == 2) {
-        Main.currentTile = map.paraMap[ctud][ctlr];
+        selectedTile = map.paraMap[ctud][ctlr];
       }
+      if (selectedTile > tilesEditorWindow.getTileSet().tiles().length) {
+        selectedTile = tilesEditorWindow.getTileSet().tiles().length;
+      }
+      tilesEditorWindow.selectTile(selectedTile);
     }
 
   }
