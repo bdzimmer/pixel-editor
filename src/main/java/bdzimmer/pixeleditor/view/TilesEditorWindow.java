@@ -108,14 +108,6 @@ public class TilesEditorWindow extends JFrame {
 
     // tileset visualization
     dosGraphics = createDosGraphics();
-    dosGraphics.setRgbPalette(paletteWindow.getDosGraphics().getRgbPalette());
-
-    dosGraphics.setToolTipText("<html>right click: grab tile<br />left click: set tile</html>");
-
-    // clicking to select and manipulate tiles
-    dosGraphics.addMouseListener(new MouseAdapter() {
-      public void mouseClicked(MouseEvent event) { handleClicks(event); }
-    });
 
     graphicsPanel.add(dosGraphics);
     add(graphicsPanel, BorderLayout.CENTER);
@@ -138,6 +130,14 @@ public class TilesEditorWindow extends JFrame {
         this.scale);
 
     dg.setGridDimensions(tileset.width(), tileset.height());
+    dg.setRgbPalette(paletteWindow.getDosGraphics().getRgbPalette());
+    dg.setToolTipText("<html>right click: grab tile<br />left click: set tile</html>");
+
+    // clicking to select and manipulate tiles
+    dg.addMouseListener(new MouseAdapter() {
+      public void mouseClicked(MouseEvent event) { handleClicks(event); }
+    });
+
     return dg;
   }
 
@@ -153,7 +153,8 @@ public class TilesEditorWindow extends JFrame {
     }
 
     if (event.isMetaDown()) {
-      // left click -- set tile in window
+
+      // right click grab tile
 
       selectTile(selectedTile);
 
@@ -267,11 +268,8 @@ public class TilesEditorWindow extends JFrame {
     attrs = TileOptions.getOptions();
     tileset = OldTilesetLoader.fromAttributes(attrs);
 
-    // create a new DosGraphics instance, but keep the old palette
-    int[][] rgbPalette = dosGraphics.getRgbPalette();
     graphicsPanel.remove(dosGraphics);
     dosGraphics = createDosGraphics();
-    dosGraphics.setRgbPalette(rgbPalette);
     graphicsPanel.add(dosGraphics);
 
     pack();

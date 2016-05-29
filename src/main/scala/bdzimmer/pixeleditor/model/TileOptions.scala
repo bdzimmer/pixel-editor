@@ -7,8 +7,6 @@
 
 // 2015-01-10
 
-// TODO: redo with Scala Swing
-
 package bdzimmer.pixeleditor.model
 
 import java.awt.{Dialog, GridLayout}                  // scalastyle:ignore illegal.imports
