@@ -28,7 +28,9 @@ import javax.swing.JToolBar;
 
 
 public class ZoomedTileWindow extends JFrame {
+
   private static final long serialVersionUID = 1L;
+
   private int tileHeight;
   private int tileWidth;
   private int zoomFactor;

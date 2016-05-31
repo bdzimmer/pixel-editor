@@ -53,6 +53,8 @@ public class TilesEditorWindow extends JFrame {
 
   private DosGraphics dosGraphics;
   private ZoomedTileWindow zoomWindow;
+  private AnimationWindow animationWindow;
+
 
   private final PaletteWindow paletteWindow;
   private final TileContainer tileContainer;
@@ -109,6 +111,13 @@ public class TilesEditorWindow extends JFrame {
     // tileset visualization
     dosGraphics = createDosGraphics();
 
+
+    graphicsPanel.setToolTipText("<html>right click: grab tile<br />left click: set tile</html>");
+
+    // clicking to select and manipulate tiles
+    graphicsPanel.addMouseListener(new MouseAdapter() {
+      public void mouseClicked(MouseEvent event) { handleClicks(event); }
+    });
     graphicsPanel.add(dosGraphics);
     add(graphicsPanel, BorderLayout.CENTER);
 
@@ -131,12 +140,6 @@ public class TilesEditorWindow extends JFrame {
 
     dg.setGridDimensions(tileset.width(), tileset.height());
     dg.setRgbPalette(paletteWindow.getDosGraphics().getRgbPalette());
-    dg.setToolTipText("<html>right click: grab tile<br />left click: set tile</html>");
-
-    // clicking to select and manipulate tiles
-    dg.addMouseListener(new MouseAdapter() {
-      public void mouseClicked(MouseEvent event) { handleClicks(event); }
-    });
 
     return dg;
   }
@@ -209,6 +212,12 @@ public class TilesEditorWindow extends JFrame {
       zoomWindow.setTile(tileset.tiles()[selectedTile].pixels(), selectedTile);
     }
     zoomWindow.toFront();
+
+    // show in animation window
+    if (animationWindow != null && animationWindow.isVisible()) {
+      animationWindow.setTileIndex(selectedTile);
+      animationWindow.toFront();
+    }
 
   }
 
@@ -441,6 +450,7 @@ public class TilesEditorWindow extends JFrame {
     final JToolBar mainToolbar = new JToolBar();
     final JToggleButton gridShow = new JToggleButton("Grid");
     final JButton changeSettings = new JButton("Settings");
+    final JButton animation = new JButton("Animation");
 
     gridShow.addChangeListener(new ChangeListener() {
       public void stateChanged(ChangeEvent e) {
@@ -456,8 +466,20 @@ public class TilesEditorWindow extends JFrame {
     });
     changeSettings.setFocusable(false);
 
+    animation.addActionListener(new ActionListener() {
+      public void actionPerformed(ActionEvent e) {
+        if (animationWindow != null) {
+          animationWindow.dispose();
+        }
+        animationWindow = new AnimationWindow(TilesEditorWindow.this);
+        animationWindow.setLocationRelativeTo(TilesEditorWindow.this);
+      }
+    });
+    animation.setFocusable(false);
+
     mainToolbar.add(gridShow);
     mainToolbar.add(changeSettings);
+    mainToolbar.add(animation);
     mainToolbar.setFloatable(false);
 
     return mainToolbar;
@@ -473,6 +495,10 @@ public class TilesEditorWindow extends JFrame {
 
   public TileContainer getTileContainer() {
     return this.tileContainer;
+  }
+
+  public PaletteWindow getPaletteWindow() {
+    return this.paletteWindow;
   }
 
 }
