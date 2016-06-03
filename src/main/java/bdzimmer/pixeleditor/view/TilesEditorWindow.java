@@ -12,6 +12,7 @@ import bdzimmer.pixeleditor.model.TileContainer;
 import bdzimmer.pixeleditor.model.TileOptions;
 import bdzimmer.pixeleditor.model.Tileset;
 import bdzimmer.pixeleditor.model.TileAttributes;
+import bdzimmer.pixeleditor.view.DragDrop.TileExportTransferHandler;
 
 import java.awt.BorderLayout;
 import java.awt.Graphics;
@@ -32,6 +33,7 @@ import javax.swing.JMenuItem;
 import javax.swing.JPanel;
 import javax.swing.JToggleButton;
 import javax.swing.JToolBar;
+import javax.swing.TransferHandler;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
@@ -112,12 +114,24 @@ public class TilesEditorWindow extends JFrame {
     dosGraphics = createDosGraphics();
 
 
-    graphicsPanel.setToolTipText("<html>right click: grab tile<br />left click: set tile</html>");
+    graphicsPanel.setToolTipText("<html>right click: grab tile<br />left click: set tile<br /></html>");
 
     // clicking to select and manipulate tiles
     graphicsPanel.addMouseListener(new MouseAdapter() {
-      public void mouseClicked(MouseEvent event) { handleClicks(event); }
+      public void mouseClicked(MouseEvent event) { handleClicks(event, true); }
     });
+
+    graphicsPanel.setTransferHandler(new TileExportTransferHandler(tileContainer));
+
+    // drag tiles onto other components
+    graphicsPanel.addMouseMotionListener(new MouseAdapter() {
+      public void mouseDragged(MouseEvent e) {
+        handleClicks(e, false);
+        JPanel jp = (JPanel) e.getSource();
+        jp.getTransferHandler().exportAsDrag(jp, e, TransferHandler.COPY);
+      }
+    });
+
     graphicsPanel.add(dosGraphics);
     add(graphicsPanel, BorderLayout.CENTER);
 
@@ -145,7 +159,7 @@ public class TilesEditorWindow extends JFrame {
   }
 
 
-  private void handleClicks(MouseEvent event) {
+  private void handleClicks(MouseEvent event, boolean allowCopy) {
 
     int selectedTile =
         (int)(event.getY() / (tileset.height() * scale)) * tileset.tilesPerRow()
@@ -161,11 +175,13 @@ public class TilesEditorWindow extends JFrame {
 
       selectTile(selectedTile);
 
-    } else {
+    } else  if (allowCopy) {
 
       int newTile = selectedTile;
 
-      // TODO: move this tile copying logic to a controller class
+      // TODO: move this tile copying logic to a controller class???
+
+      // TODO: use drag / drop functionality for this
 
       // Calculate maximum size we can copy
       // The global tile bitmap here seems kind of dumb, but it's there to allow
@@ -185,6 +201,8 @@ public class TilesEditorWindow extends JFrame {
       tileContainer.setTileBitmap(tileset.tiles()[selectedTile].pixels());
 
       repaint();
+
+
     }
 
     statusBar.update(0, 0, "" + selectedTile);
@@ -471,7 +489,9 @@ public class TilesEditorWindow extends JFrame {
         if (animationWindow != null) {
           animationWindow.dispose();
         }
-        animationWindow = new AnimationWindow(TilesEditorWindow.this);
+        animationWindow = new AnimationWindow(
+            TilesEditorWindow.this,
+            TilesEditorWindow.this.tileContainer.getTileIndex());
         animationWindow.setLocationRelativeTo(TilesEditorWindow.this);
       }
     });

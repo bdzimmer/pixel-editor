@@ -31,4 +31,12 @@ public class TileContainer {
     this.tileIndex = tileIndex;
   }
 
+  public int getHeight() {
+    return this.tileBitmap.length;
+  }
+
+  public int getWidth() {
+    return this.tileBitmap[0].length;
+  }
+
 }

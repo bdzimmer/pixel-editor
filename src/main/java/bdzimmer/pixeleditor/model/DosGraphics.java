@@ -1,8 +1,6 @@
-// Copyright (c) 2015 Ben Zimmer. All rights reserved.
+// Copyright (c) 2016 Ben Zimmer. All rights reserved.
 
 package bdzimmer.pixeleditor.model;
-
-// 11-20-12: Modifying to allow different scale factors (at least on creation).
 
 import java.awt.Color;
 import java.awt.Dimension;
@@ -27,7 +25,7 @@ public class DosGraphics extends JPanel {
   private int[][] rgbPalette = new int[256][3];
 
   private boolean showGrid = false;
-  private int gridWidth = 0;
+  private int gridWidth  = 0;
   private int gridHeight = 0;
 
 
@@ -86,8 +84,8 @@ public class DosGraphics extends JPanel {
    * Draw a tile with transparency.
    *
    * @param tile  2d int array of tile
-   * @param ud    vertical position to draw at
-   * @param lr    horizontal position to draw at
+   * @param y    vertical position to draw at
+   * @param x    horizontal position to draw at
    */
   public void drawTileTrans(int[][] tile, int y, int x) {
     if (tile != null) {
@@ -106,8 +104,8 @@ public class DosGraphics extends JPanel {
 
 
   /**
-   * Draw the tileset.
-   * @param tiles    Tiles to draw
+   * Draw a tileset.
+   * @param tileset    Tiles to draw
    */
   public void drawTileset(Tileset tileset) {
     if (tileset.tiles() != null) {
@@ -129,11 +127,17 @@ public class DosGraphics extends JPanel {
   /**
    * Set a pixel at a given location.
    *
-   * @param ud        vertical position
-   * @param lr        horizontal position
+   * @param y         vertical position
+   * @param x         horizontal position
    * @param myColor   color to set
    */
   public void setPixel(int y, int x, int colorIndex) {
+
+    // Now with bounds checks!
+    if (y < 0 || y >= height || x < 0 || x >= width) {
+      return;
+    }
+
     int rowLength = width * scale;
     int upperleft = y * scale * rowLength + x * scale;
     int curColor = palette[colorIndex];
@@ -215,7 +219,7 @@ public class DosGraphics extends JPanel {
   }
 
   public void setGridDimensions(int gridWidth, int gridHeight) {
-    this.gridWidth = gridWidth;
+    this.gridWidth  = gridWidth;
     this.gridHeight = gridHeight;
   }
 
