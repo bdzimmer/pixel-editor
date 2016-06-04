@@ -7,7 +7,6 @@
 package bdzimmer.pixeleditor.view;
 
 import javax.swing.ButtonGroup;
-import javax.swing.JComponent;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
@@ -16,7 +15,6 @@ import javax.swing.JToolBar;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
-import java.awt.BorderLayout;
 import java.awt.GridBagLayout;
 import java.awt.event.FocusEvent;
 import java.awt.event.FocusListener;
@@ -28,67 +26,54 @@ import bdzimmer.pixeleditor.model.DosGraphics;
 import bdzimmer.pixeleditor.model.TileContainer;
 import bdzimmer.pixeleditor.view.DragDrop.TileImportTransferHandler;
 
-public class AnimationWindow extends JFrame {
 
-  private static final long serialVersionUID = 1L;
+public class AnimationWindow extends CommonWindow {
+
+  private static final long serialVersionUID = 0;
+
+  private final int scale = 4;
+
+  // TODO: actually calculate these properly
+  private final int borderX = 16;
+  private final int borderY = 16;
+  private final int bgTilesWide = 5;
+  private final int bgTilesHigh = 5;
+
+  final TilesEditorWindow parent;
+
+  // default animation settings - traditional walk
 
   private int totalFrames = 16;       // total counts of frame for a single character
   private int directionFrames = 3;    // total frames of animation per direction
   private int[] frameSequence = {0, 1, 0, 2};
-
   private int fps = 60;
   private int frameCount = 8;
 
   private boolean running = false;
-
   private int tileIndex = 0;
 
-  private final int scale = 4;
-
   private Thread animationThread = null;
-
-  final TilesEditorWindow parent;
   private DosGraphics dosGraphics;
 
   private TileContainer tc = new TileContainer();     // for background tile
-
-
-  // TODO: actually calculate these properly
-
-  private final int borderX = 16;
-  private final int borderY = 16;
-
-  private final int bgTilesWide = 5;
-  private final int bgTilesHigh = 5;
-
   private int bgOffsetX = 0;
   private int bgOffsetY = 0;
+  private int bgDirection = 0;
 
-  int walkDirection = 0;
 
   public AnimationWindow(TilesEditorWindow parent, int tileIndex) {
 
     this.parent = parent;
 
+    build(JFrame.DISPOSE_ON_CLOSE);
+
+    // initialize background tile
     for (int i = 0; i < tc.getHeight(); i++) {
       tc.getTileBitmap()[i][tc.getWidth() / 2] = 255;
     }
     for (int i = 0; i < tc.getWidth(); i++) {
       tc.getTileBitmap()[tc.getHeight() / 2][i] = 255;
     }
-
-
-    add(mainToolbar(), BorderLayout.NORTH);
-    dosGraphics = createDosGraphics();
-    JPanel centerPanel = new JPanel();
-    centerPanel.setLayout(new GridBagLayout());
-    centerPanel.add(dosGraphics);
-    add(centerPanel, BorderLayout.CENTER);
-    pack();
-
-    // allow dropping a tile on
-    dosGraphics.setTransferHandler(new TileImportTransferHandler(tc));
-    dosGraphics.setToolTipText("drop a tile to change background");
 
     // stop the animation thread on close
     this.addWindowListener(new WindowAdapter(){
@@ -97,11 +82,10 @@ public class AnimationWindow extends JFrame {
       }
     });
 
-    setTileIndex(tileIndex);
-
     setTitle("Animation");
-    setResizable(false);
-    setVisible(true);
+    setTileIndex(tileIndex); // draw the initial tile
+
+    packAndShow(false);
 
   }
 
@@ -160,35 +144,15 @@ public class AnimationWindow extends JFrame {
 
   private void scroll() {
 
-    if (walkDirection == Direction.Up()) {
-      bgOffsetY -= 1;
+    if (bgDirection == Direction.Up()) { bgOffsetY -= 1; }
+    else if (bgDirection == Direction.Down()) { bgOffsetY += 1; }
+    else if (bgDirection == Direction.Left()) { bgOffsetX -= 1; }
+    else if (bgDirection == Direction.Right()) { bgOffsetX += 1; }
 
-    } else if (walkDirection == Direction.Down()) {
-      bgOffsetY += 1;
-
-    } else if (walkDirection == Direction.Left()) {
-      bgOffsetX -= 1;
-
-    } else if (walkDirection == Direction.Right()) {
-      bgOffsetX += 1;
-
-    }
-
-    if (bgOffsetX > (tc.getWidth() - 1)) {
-      bgOffsetX = 0;
-    }
-
-    if (bgOffsetX < 0) {
-      bgOffsetX = (tc.getWidth() - 1);
-    }
-
-    if (bgOffsetY > (tc.getHeight() - 1)) {
-      bgOffsetY = 0;
-    }
-
-    if (bgOffsetY < 0) {
-      bgOffsetY = (tc.getHeight() - 1);
-    }
+    if (bgOffsetX > (tc.getWidth() - 1)) { bgOffsetX = 0; }
+    if (bgOffsetX < 0) { bgOffsetX = (tc.getWidth() - 1); }
+    if (bgOffsetY > (tc.getHeight() - 1)) { bgOffsetY = 0; }
+    if (bgOffsetY < 0) { bgOffsetY = (tc.getHeight() - 1); }
 
   }
 
@@ -198,8 +162,23 @@ public class AnimationWindow extends JFrame {
   }
 
 
+  /// CommonWindow overrides
 
-  private JToolBar mainToolbar() {
+  protected JPanel panel() {
+    dosGraphics = createDosGraphics();
+
+    // allow dropping a tile on
+    dosGraphics.setTransferHandler(new TileImportTransferHandler(tc));
+    dosGraphics.setToolTipText("drop a tile to change background");
+
+    JPanel panel = new JPanel();
+    panel.setLayout(new GridBagLayout());
+    panel.add(dosGraphics);
+    return panel;
+  }
+
+
+  protected JToolBar toolBar() {
 
     final JToolBar mainToolbar = new JToolBar();
     final JTextField totalFramesInput = new JTextField(Integer.toString(totalFrames), 2);
@@ -280,27 +259,27 @@ public class AnimationWindow extends JFrame {
 
     up.addChangeListener(new ChangeListener() {
       public void stateChanged(ChangeEvent e) {
-        if (up.isSelected()) { walkDirection = Direction.Up(); }
+        if (up.isSelected()) { bgDirection = Direction.Up(); }
       }
     });
     down.addChangeListener(new ChangeListener() {
       public void stateChanged(ChangeEvent e) {
-        if (down.isSelected()) { walkDirection = Direction.Down(); }
+        if (down.isSelected()) { bgDirection = Direction.Down(); }
       }
     });
     left.addChangeListener(new ChangeListener() {
       public void stateChanged(ChangeEvent e) {
-        if (left.isSelected()) { walkDirection = Direction.Left(); }
+        if (left.isSelected()) { bgDirection = Direction.Left(); }
       }
     });
     right.addChangeListener(new ChangeListener() {
       public void stateChanged(ChangeEvent e) {
-        if (right.isSelected()) { walkDirection = Direction.Right(); }
+        if (right.isSelected()) { bgDirection = Direction.Right(); }
       }
     });
     none.addChangeListener(new ChangeListener() {
       public void stateChanged(ChangeEvent e) {
-        if (none.isSelected()) { walkDirection = Direction.NoDirection(); }
+        if (none.isSelected()) { bgDirection = Direction.NoDirection(); }
       }
     });
 
@@ -362,10 +341,6 @@ public class AnimationWindow extends JFrame {
           // System.out.println(startCharacter + " " + startDirection + " " + offsetFrame + " -> " + curFrameIndex);
 
           if (curFrameIndex < parent.getTileSet().tiles().length) {
-            // dosGraphics.updateClut();
-            // dosGraphics.drawTile(parent.getTileSet().tiles()[curFrameIndex].pixels(), border, border);
-            // dosGraphics.repaint();
-
             scroll();
             draw(curFrameIndex);
           }

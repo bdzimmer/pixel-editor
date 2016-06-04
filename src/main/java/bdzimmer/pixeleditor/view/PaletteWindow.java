@@ -218,7 +218,6 @@ class PaletteWindow extends JFrame {
 
     pack();
     this.setResizable(false);
-    setVisible(true);
   }
 
   public void refreshPalette() {

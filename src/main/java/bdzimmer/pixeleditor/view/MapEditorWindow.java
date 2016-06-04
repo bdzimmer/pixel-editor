@@ -13,7 +13,6 @@ import bdzimmer.pixeleditor.model.Tileset;
 import bdzimmer.pixeleditor.view.MapViewPanel;
 import bdzimmer.pixeleditor.view.TilesEditorWindow;
 
-import java.awt.BorderLayout;
 import java.awt.Graphics;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -24,6 +23,8 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseMotionListener;
 import java.awt.event.MouseWheelEvent;
 import java.awt.event.MouseWheelListener;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.io.File;
 
 import javax.swing.JButton;
@@ -34,6 +35,7 @@ import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
+import javax.swing.JPanel;
 import javax.swing.JToggleButton;
 import javax.swing.JToolBar;
 import javax.swing.event.ChangeEvent;
@@ -41,7 +43,7 @@ import javax.swing.event.ChangeListener;
 
 
 
-public class MapEditorWindow extends JFrame {
+public class MapEditorWindow extends CommonWindow {
 
   private static final long serialVersionUID = 0; // Meaningless junk.
 
@@ -56,10 +58,10 @@ public class MapEditorWindow extends JFrame {
   private MapViewPanel mapViewPanel;
 
   // GUI components that modify the Map object
+  // TODO: fix this
   private final JCheckBoxMenuItem jmHasParallax = new JCheckBoxMenuItem("Parallax Layer");
 
   private int overlayEdit;
-  private StatusBar statusBar = new StatusBar();
 
 
   /**
@@ -84,50 +86,8 @@ public class MapEditorWindow extends JFrame {
 
     updateTitle();
 
-    // main menu
-    setJMenuBar(mainMenu());
-
-    // main toolbar
-    add(mainToolbar(), BorderLayout.NORTH);
-
-    // map view
-    this.mapViewPanel = new MapViewPanel(
-        this.map,
-        this.tilesEditorWindow.getTileSet(),
-        this.tilesEditorWindow.getDosGraphics().getRgbPalette());
-    add(mapViewPanel, BorderLayout.CENTER);
-
-    add(statusBar, BorderLayout.SOUTH);
-    pack();
-
-    mapViewPanel.setToolTipText("<html>right click: grab tile<br />left click: set tile<br />mouse wheel: zoom<br />arrow keys: scroll</html>");
-
-    // dragging and moving mouse
-    mapViewPanel.addMouseMotionListener(new MouseMotionListener() {
-      public void mouseDragged(MouseEvent event) {
-        handleClicks(event);
-      }
-
-      public void mouseMoved(MouseEvent event) {
-        statusBar.update(
-            mapViewPanel.vlr + (int) (event.getX() / (TILE_SIZE * mapViewPanel.scale)),
-            mapViewPanel.vud + (int) (event.getY() / (TILE_SIZE * mapViewPanel.scale)),
-            "");
-      }
-    });
-
-    // clicking mouse
-    mapViewPanel.addMouseListener(new MouseAdapter() {
-      public void mousePressed(MouseEvent me) { handleClicks(me); }
-    });
-
-    mapViewPanel.addMouseWheelListener(new MouseWheelListener() {
-      public void mouseWheelMoved(MouseWheelEvent ae) {
-        int notches = ae.getWheelRotation();
-        notches = Integer.signum(notches);
-        zoom(notches);
-      }
-    });
+    build(JFrame.DISPOSE_ON_CLOSE);
+    mapViewPanel = (MapViewPanel)panel;
 
     // listener for scrolling with arrow keys
     setFocusable(true);
@@ -135,9 +95,14 @@ public class MapEditorWindow extends JFrame {
       public void keyPressed(KeyEvent ae) { handleKeys(ae); }
     });
 
-    setResizable(false);
-    setVisible(true);
-    repaint();
+    // redraw on focus gained
+    addWindowFocusListener(new WindowAdapter() {
+      public void windowGainedFocus(WindowEvent event) {
+        repaint();
+      }
+    });
+
+    packAndShow(false);
 
   }
 
@@ -332,7 +297,7 @@ public class MapEditorWindow extends JFrame {
   }
 
 
-  private JMenuBar mainMenu() {
+  protected JMenuBar menu() {
 
     JMenuBar mainMenu = new JMenuBar();
 
@@ -420,7 +385,7 @@ public class MapEditorWindow extends JFrame {
   }
 
 
-  private JToolBar mainToolbar() {
+  protected JToolBar toolBar() {
 
     final JToolBar mainToolbar = new JToolBar();
     final JToggleButton gridShow = new JToggleButton("Grid");
@@ -497,6 +462,52 @@ public class MapEditorWindow extends JFrame {
 
     return mainToolbar;
 
+  }
+
+
+  protected JPanel panel() {
+
+    JPanel panel = new MapViewPanel(
+        this.map,
+        this.tilesEditorWindow.getTileSet(),
+        this.tilesEditorWindow.getDosGraphics().getRgbPalette());
+
+    panel.setToolTipText("<html>right click: grab tile<br />left click: set tile<br />mouse wheel: zoom<br />arrow keys: scroll</html>");
+
+    // dragging and moving mouse
+    panel.addMouseMotionListener(new MouseMotionListener() {
+      public void mouseDragged(MouseEvent event) {
+        handleClicks(event);
+      }
+
+      public void mouseMoved(MouseEvent event) {
+
+        statusBar.update(
+            mapViewPanel.vlr + (int) (event.getX() / (TILE_SIZE * mapViewPanel.scale)),
+            mapViewPanel.vud + (int) (event.getY() / (TILE_SIZE * mapViewPanel.scale)),
+            "");
+      }
+    });
+
+    // clicking mouse
+    panel.addMouseListener(new MouseAdapter() {
+      public void mousePressed(MouseEvent me) { handleClicks(me); }
+    });
+
+    panel.addMouseWheelListener(new MouseWheelListener() {
+      public void mouseWheelMoved(MouseWheelEvent ae) {
+        int notches = ae.getWheelRotation();
+        notches = Integer.signum(notches);
+        zoom(notches);
+      }
+    });
+
+    return panel;
+
+  }
+
+  protected StatusBar statusBar() {
+    return new StatusBar(6, 6, 20);
   }
 
 }

@@ -24,6 +24,8 @@ import bdzimmer.pixeleditor.controller.OldTilesetLoader;
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.WindowEvent;
+import java.awt.event.WindowAdapter;
 import java.io.File;
 
 import scala.collection.immutable.List;
@@ -33,9 +35,11 @@ import javax.swing.JFrame;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
+import javax.swing.JPanel;
+import javax.swing.JToolBar;
 
 
-public class Main extends JFrame {
+public class Main extends CommonWindow {
 
   private static final long serialVersionUID = 1L;
 
@@ -43,7 +47,7 @@ public class Main extends JFrame {
   public final List<AssetMetadata> metadata;
 
   private final int[][] globalPalette = new int[256][3];
-  private final PaletteWindow paletteWindow = new PaletteWindow(globalPalette);
+  private PaletteWindow paletteWindow = new PaletteWindow(globalPalette);
   private final TileContainer tileContainer = new TileContainer();
 
   /**
@@ -54,87 +58,36 @@ public class Main extends JFrame {
    */
   public Main(String contentDir, String title, String metadataFilename) {
 
-    System.out.println("content directory: " + contentDir);
+    System.out.println("starting pixel-editor in content directory " + contentDir);
 
     this.contentDir = contentDir;
     this.metadata = AssetMetadataUtils.loadAssetMetadata(metadataFilename);
 
-    paletteWindow.setLocationRelativeTo(null);
+    build(JFrame.EXIT_ON_CLOSE);
+
+    // update the statusbar to show memory usage every 30 seconds
+    /*
+    Timer memoryUpdateTimer = new Timer(30000, new ActionListener() {
+      public void actionPerformed(ActionEvent evt) {
+        updateMemoryUsageDisplay();
+      }
+    });
+    memoryUpdateTimer.setInitialDelay(0);
+    memoryUpdateTimer.start();
+    */
+
+    setFocusable(true);
+    addWindowFocusListener(new WindowAdapter() {
+      public void windowGainedFocus(WindowEvent event) {
+        updateMemoryUsageDisplay();
+      }
+    });
+    updateMemoryUsageDisplay();
 
     setAlwaysOnTop(true);
-    setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
     setTitle(title);
 
-    // Menubar
-    JMenuBar mainMenu = new JMenuBar();
-    setJMenuBar(mainMenu);
-
-    JMenu fileMenu = new JMenu("File");
-    mainMenu.add(fileMenu);
-
-    JMenuItem jmExit = new JMenuItem("Exit");
-    jmExit.addActionListener(new ActionListener() {
-      public void actionPerformed(ActionEvent event) {
-        System.exit(0);
-      }
-    });
-    fileMenu.add(jmExit);
-
-    // Add buttons for spawning new windows.
-    this.setLayout(new GridLayout(7, 1, 5, 5));
-
-    JButton addTileMapWindow = new JButton("Tileset / Map Editor");
-    addTileMapWindow.addActionListener(new ActionListener() {
-      public void actionPerformed(ActionEvent arg0) {
-        createLinkedTileAndMapWindows("", "");
-      }
-    });
-    this.add(addTileMapWindow);
-
-    JButton addSpriteWindow = new JButton("Sprite Editor");
-    addSpriteWindow.addActionListener(new ActionListener() {
-      public void actionPerformed(ActionEvent arg0) {
-        createSpriteWindow("", "NPC");
-      }
-    });
-    this.add(addSpriteWindow);
-
-    /// /// ///
-
-    JButton addTilesetListWindow = new JButton("Load Map Tiles");
-    addTilesetListWindow.addActionListener(new ActionListener() {
-      public void actionPerformed(ActionEvent arg0) {
-        new TilesLoadWindow(Main.this).setLocationRelativeTo(null);
-      }
-    });
-    this.add(addTilesetListWindow);
-
-    JButton addSpritesheetListWindow = new JButton("Load Sprites");
-    addSpritesheetListWindow.addActionListener(new ActionListener() {
-      public void actionPerformed(ActionEvent arg0) {
-        new SpriteLoadWindow(Main.this).setLocationRelativeTo(null);
-      }
-    });
-    this.add(addSpritesheetListWindow);
-
-    JButton addMapListWindow = new JButton("Load Maps");
-    addMapListWindow.addActionListener(new ActionListener() {
-      public void actionPerformed(ActionEvent arg0) {
-        new MapLoadWindow(Main.this).setLocationRelativeTo(null);
-      }
-    });
-    this.add(addMapListWindow);
-
-    JButton addWorldWindow = new JButton("Load Script Files");
-    addWorldWindow.addActionListener(new ActionListener() {
-      public void actionPerformed(ActionEvent arg0) {
-        new ScriptLoadWindow(Main.this).setLocationRelativeTo(null);
-      }
-    });
-    this.add(addWorldWindow);
-
-    this.pack();
-    setVisible(true);
+    packAndShow(false);
 
   }
 
@@ -211,5 +164,126 @@ public class Main extends JFrame {
 
   }
 
+
+  /// CommonWindow overrides
+
+  protected JMenuBar menuBar() {
+
+    // Menubar
+    JMenuBar mainMenu = new JMenuBar();
+
+    JMenu fileMenu = new JMenu("File");
+    mainMenu.add(fileMenu);
+
+    JMenuItem jmExit = new JMenuItem("Exit");
+    jmExit.addActionListener(new ActionListener() {
+      public void actionPerformed(ActionEvent event) {
+        System.exit(0);
+      }
+    });
+    fileMenu.add(jmExit);
+
+    return mainMenu;
+
+  }
+
+  protected JToolBar toolBar() {
+
+    final JToolBar mainToolbar = new JToolBar();
+
+    // button to show the palette window in case it gets closed
+    final JButton palette = new JButton("Palette");
+    palette.addActionListener(new ActionListener() {
+      public void actionPerformed(ActionEvent e) {
+        paletteWindow.setVisible(true);
+        paletteWindow.toFront();
+      }
+    });
+    palette.setFocusable(false);
+    mainToolbar.add(palette);
+    mainToolbar.setFloatable(false);
+
+    return mainToolbar;
+  }
+
+
+  protected JPanel panel() {
+
+    JPanel panel = new JPanel();
+
+    // Add buttons for spawning new windows and sets of windows
+    panel.setLayout(new GridLayout(7, 1, 5, 5));
+
+    JButton addTileMapWindow = new JButton("Tileset / Map Editor");
+    addTileMapWindow.addActionListener(new ActionListener() {
+      public void actionPerformed(ActionEvent arg0) {
+        createLinkedTileAndMapWindows("", "");
+      }
+    });
+    panel.add(addTileMapWindow);
+
+    JButton addSpriteWindow = new JButton("Sprite Editor");
+    addSpriteWindow.addActionListener(new ActionListener() {
+      public void actionPerformed(ActionEvent arg0) {
+        createSpriteWindow("", "NPC");
+      }
+    });
+    panel.add(addSpriteWindow);
+
+    /// /// ///
+
+    JButton addTilesetListWindow = new JButton("Load Map Tiles");
+    addTilesetListWindow.addActionListener(new ActionListener() {
+      public void actionPerformed(ActionEvent arg0) {
+        new TilesLoadWindow(Main.this).setLocationRelativeTo(null);
+      }
+    });
+    panel.add(addTilesetListWindow);
+
+    JButton addSpritesheetListWindow = new JButton("Load Sprites");
+    addSpritesheetListWindow.addActionListener(new ActionListener() {
+      public void actionPerformed(ActionEvent arg0) {
+        new SpriteLoadWindow(Main.this).setLocationRelativeTo(null);
+      }
+    });
+    panel.add(addSpritesheetListWindow);
+
+    JButton addMapListWindow = new JButton("Load Maps");
+    addMapListWindow.addActionListener(new ActionListener() {
+      public void actionPerformed(ActionEvent arg0) {
+        new MapLoadWindow(Main.this).setLocationRelativeTo(null);
+      }
+    });
+    panel.add(addMapListWindow);
+
+    JButton addWorldWindow = new JButton("Load Script Files");
+    addWorldWindow.addActionListener(new ActionListener() {
+      public void actionPerformed(ActionEvent arg0) {
+        new ScriptLoadWindow(Main.this).setLocationRelativeTo(null);
+      }
+    });
+    panel.add(addWorldWindow);
+
+    return panel;
+
+  }
+
+
+  protected StatusBar statusBar() {
+    return new StatusBar(20, 0, 0);
+  }
+
+
+  private void updateMemoryUsageDisplay() {
+    System.gc();
+    Runtime runtime = Runtime.getRuntime();
+    int mb = 1024 * 1024;
+    long totalMemory = runtime.totalMemory() / mb;
+    long freeMemory  = runtime.freeMemory() / mb;
+    // long maxMemory   = runtime.maxMemory()  / mb;
+    statusBar.update(
+        (totalMemory - freeMemory) + " / " + totalMemory + " MB",
+        "", "");
+  }
 
 }

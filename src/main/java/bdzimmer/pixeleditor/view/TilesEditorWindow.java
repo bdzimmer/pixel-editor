@@ -14,14 +14,13 @@ import bdzimmer.pixeleditor.model.Tileset;
 import bdzimmer.pixeleditor.model.TileAttributes;
 import bdzimmer.pixeleditor.view.DragDrop.TileExportTransferHandler;
 
-import java.awt.BorderLayout;
 import java.awt.Graphics;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.awt.event.FocusAdapter;
-import java.awt.event.FocusEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.io.File;
 
 import javax.swing.JButton;
@@ -39,14 +38,13 @@ import javax.swing.event.ChangeListener;
 
 
 
-public class TilesEditorWindow extends JFrame {
+public class TilesEditorWindow extends CommonWindow {
 
   private static final long serialVersionUID = 0;
 
   private final String tilesDir;
   private final String title;
 
-  private final StatusBar statusBar = new StatusBar();
   private final int scale = 3;
 
   private Tileset tileset;
@@ -57,11 +55,8 @@ public class TilesEditorWindow extends JFrame {
   private ZoomedTileWindow zoomWindow;
   private AnimationWindow animationWindow;
 
-
   private final PaletteWindow paletteWindow;
   private final TileContainer tileContainer;
-
-  private JPanel graphicsPanel = new JPanel();
 
   // private int currentTile;
 
@@ -97,50 +92,17 @@ public class TilesEditorWindow extends JFrame {
     this.paletteWindow = paletteWindow;
     this.tileContainer = tileContainer;
 
-    // UI stuff
+    build(JFrame.DISPOSE_ON_CLOSE);
 
     // redraw on focus gained
-    addFocusListener(new FocusAdapter() {
-      public void focusGained(FocusEvent event) { repaint(); }
-    });
-
-    // main menu
-    setJMenuBar(mainMenu());
-
-    // toolbar
-    add(mainToolbar(), BorderLayout.NORTH);
-
-    // tileset visualization
-    dosGraphics = createDosGraphics();
-
-
-    graphicsPanel.setToolTipText("<html>right click: grab tile<br />left click: set tile<br /></html>");
-
-    // clicking to select and manipulate tiles
-    graphicsPanel.addMouseListener(new MouseAdapter() {
-      public void mouseClicked(MouseEvent event) { handleClicks(event, true); }
-    });
-
-    graphicsPanel.setTransferHandler(new TileExportTransferHandler(tileContainer));
-
-    // drag tiles onto other components
-    graphicsPanel.addMouseMotionListener(new MouseAdapter() {
-      public void mouseDragged(MouseEvent e) {
-        handleClicks(e, false);
-        JPanel jp = (JPanel) e.getSource();
-        jp.getTransferHandler().exportAsDrag(jp, e, TransferHandler.COPY);
+    setFocusable(true);
+    addWindowFocusListener(new WindowAdapter() {
+      public void windowGainedFocus(WindowEvent event) {
+        repaint();
       }
     });
 
-    graphicsPanel.add(dosGraphics);
-    add(graphicsPanel, BorderLayout.CENTER);
-
-    // status bar
-    add(statusBar, BorderLayout.SOUTH);
-
-    pack();
-    setResizable(false);
-    setVisible(true);
+    packAndShow(false);
 
   }
 
@@ -179,9 +141,7 @@ public class TilesEditorWindow extends JFrame {
 
       int newTile = selectedTile;
 
-      // TODO: move this tile copying logic to a controller class???
-
-      // TODO: use drag / drop functionality for this
+      // TODO: use drag / drop functionality for this???
 
       // Calculate maximum size we can copy
       // The global tile bitmap here seems kind of dumb, but it's there to allow
@@ -199,9 +159,7 @@ public class TilesEditorWindow extends JFrame {
       // set the copy as the current tile
       tileContainer.setTileIndex(selectedTile);
       tileContainer.setTileBitmap(tileset.tiles()[selectedTile].pixels());
-
       repaint();
-
 
     }
 
@@ -295,9 +253,9 @@ public class TilesEditorWindow extends JFrame {
     attrs = TileOptions.getOptions();
     tileset = OldTilesetLoader.fromAttributes(attrs);
 
-    graphicsPanel.remove(dosGraphics);
+    panel.remove(dosGraphics);
     dosGraphics = createDosGraphics();
-    graphicsPanel.add(dosGraphics);
+    panel.add(dosGraphics);
 
     pack();
     repaint();
@@ -388,7 +346,8 @@ public class TilesEditorWindow extends JFrame {
   }
 
 
-  private JMenuBar mainMenu() {
+
+  protected JMenuBar menuBar() {
 
     final JMenuBar mainMenu = new JMenuBar();
 
@@ -463,7 +422,9 @@ public class TilesEditorWindow extends JFrame {
     return mainMenu;
   }
 
-  private JToolBar mainToolbar() {
+
+
+  protected JToolBar toolBar() {
 
     final JToolBar mainToolbar = new JToolBar();
     final JToggleButton gridShow = new JToggleButton("Grid");
@@ -504,6 +465,43 @@ public class TilesEditorWindow extends JFrame {
 
     return mainToolbar;
   }
+
+
+  protected JPanel panel() {
+
+    // tileset visualization
+    dosGraphics = createDosGraphics();
+
+    JPanel graphicsPanel = new JPanel();
+
+    graphicsPanel.setToolTipText("<html>right click: grab tile<br />left click: set tile<br /></html>");
+
+    // clicking to select and manipulate tiles
+    graphicsPanel.addMouseListener(new MouseAdapter() {
+      public void mouseClicked(MouseEvent event) { handleClicks(event, true); }
+    });
+
+    // drag tiles onto other components
+    graphicsPanel.setTransferHandler(new TileExportTransferHandler(tileContainer));
+    graphicsPanel.addMouseMotionListener(new MouseAdapter() {
+      public void mouseDragged(MouseEvent e) {
+        handleClicks(e, false);
+        JPanel jp = (JPanel) e.getSource();
+        jp.getTransferHandler().exportAsDrag(jp, e, TransferHandler.COPY);
+      }
+    });
+
+    graphicsPanel.add(dosGraphics);
+
+    return graphicsPanel;
+
+  }
+
+
+  protected StatusBar statusBar() {
+    return new StatusBar(6, 6, 20);
+  }
+
 
   public Tileset getTileSet() {
     return this.tileset;

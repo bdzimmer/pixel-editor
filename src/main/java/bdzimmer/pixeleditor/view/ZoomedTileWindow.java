@@ -272,6 +272,8 @@ public class ZoomedTileWindow extends JFrame {
       }
     });
 
+    setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+
     setTitle(title);
     setVisible(true);
     setResizable(false);
