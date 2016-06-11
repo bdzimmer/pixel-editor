@@ -65,17 +65,6 @@ public class Main extends CommonWindow {
 
     build(JFrame.EXIT_ON_CLOSE);
 
-    // update the statusbar to show memory usage every 30 seconds
-    /*
-    Timer memoryUpdateTimer = new Timer(30000, new ActionListener() {
-      public void actionPerformed(ActionEvent evt) {
-        updateMemoryUsageDisplay();
-      }
-    });
-    memoryUpdateTimer.setInitialDelay(0);
-    memoryUpdateTimer.start();
-    */
-
     setFocusable(true);
     addWindowFocusListener(new WindowAdapter() {
       public void windowGainedFocus(WindowEvent event) {
@@ -84,10 +73,11 @@ public class Main extends CommonWindow {
     });
     updateMemoryUsageDisplay();
 
-    setAlwaysOnTop(true);
     setTitle(title);
 
     packAndShow(false);
+
+    paletteWindow.setLocationRelativeTo(null);
 
   }
 
@@ -186,6 +176,7 @@ public class Main extends CommonWindow {
     return mainMenu;
 
   }
+
 
   protected JToolBar toolBar() {
 
