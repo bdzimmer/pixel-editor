@@ -24,7 +24,7 @@ object AssetMetadataUtils {
           + x.filename + FieldSep
           + x.info)
     })
-    pw.close
+    pw.close()
   }
 
   // load asset metadata
