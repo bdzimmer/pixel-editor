@@ -14,13 +14,14 @@ import javax.swing.border.EmptyBorder
 
 
 class ImageWidget(
-    title: String,
+    val title: String,
     image: BufferedImage,
     buttons: List[JButton],
-    buttonWidth: Int = 100) extends JComponent {
+    buttonWidth: Int = 100,
+    yOffset: Int = 0) extends JComponent {
 
   val wx = image.getWidth + buttonWidth
-  val wy = image.getHeight
+  val wy = image.getHeight + yOffset
 
   setAlignmentX(Component.RIGHT_ALIGNMENT);
 
@@ -36,18 +37,20 @@ class ImageWidget(
 
   override def getPreferredSize(): Dimension = new Dimension(wx, wy)
 
-  override def getSize(): Dimension =  new Dimension(wx, wy)
+  override def getSize(): Dimension = new Dimension(wx, wy)
 
   override def paintComponent(graphics: Graphics): Unit = {
     super.paintComponent(graphics)
 
+    println("ImageWidget paintComponent")
+
     graphics.setColor(Color.black)
     graphics.fillRect(0, 0, this.getWidth, this.getHeight)
-    graphics.drawImage(image, 0, 0, null)
+    graphics.drawImage(image, 0, yOffset, null)
 
-    graphics.setFont(new Font("Monospace", Font.BOLD, 16))
+    graphics.setFont(new Font("Monospace", Font.BOLD, 12))
     graphics.setColor(Color.white)
-    graphics.drawString(title, 10, 20)
+    graphics.drawString(title, 5, 15)
   }
 
 }

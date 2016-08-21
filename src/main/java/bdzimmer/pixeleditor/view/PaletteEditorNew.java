@@ -7,6 +7,7 @@ package bdzimmer.pixeleditor.view;
 
 import bdzimmer.pixeleditor.controller.PaletteUtils;
 import bdzimmer.pixeleditor.model.ColorTriple;
+import bdzimmer.pixeleditor.model.WidgetUpdater;
 
 import java.awt.BorderLayout;
 import java.awt.Canvas;
@@ -45,6 +46,7 @@ public class PaletteEditorNew extends JFrame {
   private final int rows;
   private final int colorFactor;
   private final int bitsPerChannel;
+  private final WidgetUpdater widgetUpdater;
 
   private JSpinner rVal = new JSpinner();
   private JSpinner gVal = new JSpinner();
@@ -52,13 +54,18 @@ public class PaletteEditorNew extends JFrame {
 
   private int selectedIdx = 0;
 
-  public PaletteEditorNew(ColorTriple[] palette, int bitsPerChannel, String title) {
+  public PaletteEditorNew(
+		  String title,
+		  ColorTriple[] palette,
+		  int bitsPerChannel,
+		  WidgetUpdater widgetUpdater) {
 
     setTitle(title);
     this.palette = palette;
     length = this.palette.length;
+    this.widgetUpdater = widgetUpdater;
 
-    rows = length / cols;
+    rows = (length + cols - 1) / cols;
     image = PaletteEditorNew.imageForPalette(length, cols, swatchSize);
     imagePanel = new ImagePanel(image);
 
@@ -244,6 +251,7 @@ public class PaletteEditorNew extends JFrame {
   public void paint(Graphics graphics) {
     super.paint(graphics);
     refreshPalette();
+    widgetUpdater.update();
   }
 
 
