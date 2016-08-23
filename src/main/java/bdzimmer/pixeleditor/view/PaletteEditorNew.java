@@ -7,7 +7,7 @@ package bdzimmer.pixeleditor.view;
 
 import bdzimmer.pixeleditor.controller.PaletteUtils;
 import bdzimmer.pixeleditor.model.ColorTriple;
-import bdzimmer.pixeleditor.model.WidgetUpdater;
+import bdzimmer.pixeleditor.view.WidgetUpdater;
 
 import java.awt.BorderLayout;
 import java.awt.Canvas;
