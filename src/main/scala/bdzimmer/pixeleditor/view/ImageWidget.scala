@@ -12,7 +12,7 @@ import java.io.File
 import javax.swing.{JButton, JComponent, JPanel, SwingConstants, JScrollPane}
 import javax.swing.border.EmptyBorder
 
-import scala.collection.mutable.ArrayBuffer
+import scala.collection.mutable.Buffer
 
 
 class ImageWidget(
@@ -85,7 +85,7 @@ object ImageWidget {
 
 // single-column scrollpane of image widgets of potentially different heights and widths
 // they can also be selected
-class WidgetScroller(widgets: ArrayBuffer[ImageWidget]) extends JScrollPane {
+class WidgetScroller(widgets: Buffer[ImageWidget]) extends JScrollPane {
 
   private var selectedIdx = 0
 

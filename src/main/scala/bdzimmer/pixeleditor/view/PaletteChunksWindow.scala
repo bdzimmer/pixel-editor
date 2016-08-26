@@ -2,13 +2,13 @@
 
 package bdzimmer.pixeleditor.view
 
-import scala.collection.mutable.ArrayBuffer
+import scala.collection.mutable.Buffer
 
 import java.awt.event.{ActionEvent, ActionListener, FocusAdapter, FocusEvent, MouseAdapter, MouseEvent}
 import java.awt.{GridLayout, BorderLayout, Dimension}
 import javax.swing.{JButton, JPanel, JOptionPane, JToolBar, WindowConstants}
 
-import bdzimmer.pixeleditor.model.TileCollection.Settings
+import bdzimmer.pixeleditor.model.TileCollectionModel.Settings
 import bdzimmer.pixeleditor.model.ColorTriple
 
 
@@ -25,7 +25,7 @@ case class PaletteChunk(val name: String, pal: Array[ColorTriple])
 
 class PaletteChunksWindow(
     title: String,
-    val chunks: ArrayBuffer[PaletteChunk],
+    val chunks: Buffer[PaletteChunk],
     settings: Settings) extends CommonWindow {
 
   setTitle(title)
@@ -36,7 +36,7 @@ class PaletteChunksWindow(
 
   val scrollPane = new WidgetScroller(widgets)
 
-  build(WindowConstants.DISPOSE_ON_CLOSE)
+  build(WindowConstants.HIDE_ON_CLOSE)
 
   setFocusable(true)
   addFocusListener(new FocusAdapter() {
@@ -47,7 +47,8 @@ class PaletteChunksWindow(
   })
   rebuild()
 
-  packAndShow(false)
+  pack()
+  setResizable(false)
 
 
   /////////////////////////////////////////
@@ -100,7 +101,9 @@ class PaletteChunksWindow(
         val idx = scrollPane.getSelectedIdx
         if (idx < widgets.length) {
           val chunk = chunks(idx)
-          new PaletteEditorNew(chunk.name, chunk.pal, 6, updaters(idx)).setVisible(true)
+          val editor = new PaletteEditorNew(chunk.name, chunk.pal, 6, updaters(idx))
+          editor.setLocationRelativeTo(null)
+          editor.setVisible(true)
         }
 
       }

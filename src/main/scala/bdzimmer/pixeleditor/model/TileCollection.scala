@@ -4,7 +4,7 @@
 
 package bdzimmer.pixeleditor.model
 
-import scala.collection.immutable.Seq
+import scala.collection.mutable.{Buffer, HashMap => MutableMap}
 import scala.collection.mutable.ArrayBuffer
 
 import java.awt.Image
@@ -14,7 +14,14 @@ import bdzimmer.pixeleditor.view.{PaletteChunk, PaletteChunksWindow}
 case class ColorTriple(val r: Int, val g: Int, val b: Int)
 
 
-object TileCollection {
+object TileCollectionModel {
+
+  case class TileCollection(
+    settings: Settings,
+    pixels: Pixels,
+    vmaps: Buffer[(String, VMap)],
+    paletteChunks: Buffer[(String, Array[ColorTriple])]
+  )
 
   case class Settings(
 
@@ -29,7 +36,7 @@ object TileCollection {
     // view settings
     viewPaletteColumns: Int,
     viewTileColumns: Int
-   )
+  )
 
   case class Pixels(
     colorsPerTile: Int,
@@ -37,8 +44,8 @@ object TileCollection {
   )
 
   case class VMap(
-    palConfs: Seq[PaletteConf],
-    entries:  Seq[VMapEntry]
+    palConfs: Buffer[PaletteConf],
+    entries:  Buffer[VMapEntry]
   )
 
 
@@ -52,7 +59,7 @@ object TileCollection {
 
 
   case class PaletteConf(
-    chunks: Seq[(Int, Seq[ColorTriple])]
+    chunks: Buffer[(Int, Buffer[ColorTriple])]
   )
 
 }
@@ -61,9 +68,12 @@ object TileCollection {
 
 object Experiment {
 
+  import TileCollectionModel._
+  import bdzimmer.pixeleditor.view.TileCollectionWindow
+
   def main(args: Array[String]): Unit = {
 
-    val settings = new TileCollection.Settings(
+    val settings = new Settings(
         bitsPerChannel  = 6,
         paletteSize   = 256,
         colorsPerTile = 16,
@@ -74,14 +84,16 @@ object Experiment {
         viewTileColumns    = 16)
 
     def pal = (0 until 32).map(_ => ColorTriple(0, 0, 0)).toArray
-    val chunks = ArrayBuffer("Cave Floor", "Cave Walls", "Baloney", "Cheese", "Snowstorm").map(
-          name => PaletteChunk(name, pal.clone()))
+    val names = List("Cave Floor", "Cave Walls", "Baloney", "Cheese", "Snowstorm")
+    val chunks = names.map(name => (name, pal.clone())).toBuffer
 
-    val pc = new PaletteChunksWindow("Palette Chunks", chunks, settings)
+    val tc = TileCollection(
+      settings,
+      Pixels(16, Array()),
+      Buffer(),
+      chunks)
 
-    val largePal = pal.clone() ++ pal.clone()
-    pc.add(PaletteChunk("Cavern", largePal))
-    pc.rebuild()
+     new TileCollectionWindow("Test", tc, "junk").setVisible(true)
 
   }
 }
