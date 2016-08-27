@@ -90,16 +90,8 @@ public class MapEditorWindow extends CommonWindow {
     mapViewPanel = (MapViewPanel)panel;
 
     // listener for scrolling with arrow keys
-    setFocusable(true);
     addKeyListener(new KeyAdapter() {
       public void keyPressed(KeyEvent ae) { handleKeys(ae); }
-    });
-
-    // redraw on focus gained
-    addWindowFocusListener(new WindowAdapter() {
-      public void windowGainedFocus(WindowEvent event) {
-        repaint();
-      }
     });
 
     packAndShow(false);

@@ -65,12 +65,6 @@ public class Main extends CommonWindow {
 
     build(JFrame.EXIT_ON_CLOSE);
 
-    setFocusable(true);
-    addWindowFocusListener(new WindowAdapter() {
-      public void windowGainedFocus(WindowEvent event) {
-        updateMemoryUsageDisplay();
-      }
-    });
     updateMemoryUsageDisplay();
 
     setTitle(title);
@@ -264,7 +258,10 @@ public class Main extends CommonWindow {
     return new StatusBar(20, 0, 0);
   }
 
-
+  protected void onFocus() {
+	updateMemoryUsageDisplay();
+  }
+  
   private void updateMemoryUsageDisplay() {
     System.gc();
     Runtime runtime = Runtime.getRuntime();

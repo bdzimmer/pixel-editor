@@ -8,7 +8,7 @@ import java.awt.event.{ActionEvent, ActionListener, FocusAdapter, FocusEvent, Mo
 import java.awt.{GridLayout, BorderLayout, Dimension}
 import javax.swing.{JButton, JPanel, JOptionPane, JToolBar, WindowConstants}
 
-import bdzimmer.pixeleditor.model.TileCollectionModel.Settings
+import bdzimmer.pixeleditor.model.TileCollectionModel._
 import bdzimmer.pixeleditor.model.ColorTriple
 
 
@@ -19,43 +19,29 @@ trait WidgetUpdater {
 }
 
 
-// a UI helper case class
-case class PaletteChunk(val name: String, pal: Array[ColorTriple])
-
 
 class PaletteChunksWindow(
     title: String,
-    val chunks: Buffer[PaletteChunk],
+    val chunks: Buffer[Named[Array[ColorTriple]]],
     settings: Settings) extends CommonWindow {
 
   setTitle(title)
 
   // chunks, updaters, and widgets
-  val updaters = chunks.map(chunk => new PaletteChunkUpdater(chunk, settings.bitsPerChannel, settings.viewPaletteColumns))
+  val updaters = chunks.map(chunk => new PaletteChunkUpdater(chunk, settings.bitsPerChannel, settings.viewPaletteCols))
   val widgets = updaters.map(_.widget)
 
   val scrollPane = new WidgetScroller(widgets)
 
   build(WindowConstants.HIDE_ON_CLOSE)
 
-  setFocusable(true)
-  addFocusListener(new FocusAdapter() {
-    override def focusGained(event: FocusEvent): Unit = {
-      println("palette chunks window focus gained!");
-      repaint()
-    }
-  })
-  rebuild()
-
   pack()
   setResizable(false)
 
-
   /////////////////////////////////////////
 
-
-  def add(chunk: PaletteChunk): Unit = {
-    val updater = new PaletteChunkUpdater(chunk, settings.bitsPerChannel, settings.viewPaletteColumns)
+  def add(chunk: Named[Array[ColorTriple]]): Unit = {
+    val updater = new PaletteChunkUpdater(chunk, settings.bitsPerChannel, settings.viewPaletteCols)
     val widget = updater.widget
     chunks   += chunk
     updaters += updater
@@ -63,8 +49,8 @@ class PaletteChunksWindow(
   }
 
 
-  def update(idx: Int, chunk: PaletteChunk): Unit = {
-    val updater = new PaletteChunkUpdater(chunk, settings.bitsPerChannel, settings.viewPaletteColumns)
+  def update(idx: Int, chunk: Named[Array[ColorTriple]]): Unit = {
+    val updater = new PaletteChunkUpdater(chunk, settings.bitsPerChannel, settings.viewPaletteCols)
     updater.widget.setSelected(widgets(idx).getSelected)
     updater.update()
     val widget = updater.widget
@@ -101,7 +87,7 @@ class PaletteChunksWindow(
         val idx = scrollPane.getSelectedIdx
         if (idx < widgets.length) {
           val chunk = chunks(idx)
-          val editor = new PaletteEditorNew(chunk.name, chunk.pal, 6, updaters(idx))
+          val editor = new PaletteEditorNew(chunk.name, chunk.value, 6, updaters(idx))
           editor.setLocationRelativeTo(null)
           editor.setVisible(true)
         }
@@ -141,11 +127,11 @@ class PaletteChunksWindow(
   // that can be efficiently updated by the palette editor
 
   class PaletteChunkUpdater(
-      chunk: PaletteChunk, bitsPerChannel: Int, cols: Int) extends WidgetUpdater {
+      chunk: Named[Array[ColorTriple]], bitsPerChannel: Int, cols: Int) extends WidgetUpdater {
 
-    val rows = (chunk.pal.length + cols - 1) / cols
+    val rows = (chunk.value.length + cols - 1) / cols
     val image = PaletteEditorNew.imageForPalette(
-        chunk.pal.length, cols, PaletteChunksWindow.SwatchSize)
+        chunk.value.length, cols, PaletteChunksWindow.SwatchSize)
 
     draw()
     val widget = new ImageWidget(chunk.name, image, List(), 0, 24)
@@ -153,9 +139,9 @@ class PaletteChunksWindow(
     /////
 
     def draw(): Unit = {
-      println("PaletteChunkUpdater drawing " + chunk.name)
+      println("PaletteChunkUpdater draw " + chunk.name)
       PaletteEditorNew.drawPalette(
-          image, chunk.pal, bitsPerChannel, rows, cols, PaletteChunksWindow.SwatchSize)
+          image, chunk.value, bitsPerChannel, rows, cols, PaletteChunksWindow.SwatchSize)
     }
 
     def update(): Unit = {

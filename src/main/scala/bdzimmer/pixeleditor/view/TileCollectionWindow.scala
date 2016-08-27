@@ -20,19 +20,16 @@ class TileCollectionWindow(
 
   var paletteChunksWindow = new PaletteChunksWindow(
       "Palette Chunks",
-      tileCollection.paletteChunks.map(x => PaletteChunk(x._1, x._2)).toBuffer,
+      tileCollection.paletteChunks,
       tileCollection.settings)
   paletteChunksWindow.setLocationRelativeTo(null)
 
-  ///
+  // initialize Pixels window
 
-  setFocusable(true)
-  addFocusListener(new FocusAdapter() {
-    override def focusGained(event: FocusEvent): Unit = {
-      println("palette chunks window focus gained!");
-      repaint()
-    }
-  })
+  var pixelsWindow = new PixelsWindow("Pixels", tileCollection.pixels, tileCollection.settings)
+  pixelsWindow.setLocationRelativeTo(null)
+
+  ////
 
   build(WindowConstants.EXIT_ON_CLOSE)
   packAndShow(false)
@@ -53,32 +50,30 @@ class TileCollectionWindow(
   override def menuBar(): JMenuBar = {
 
     val mainMenu = new JMenuBar()
-
     val fileMenu = new JMenu("File")
 
     val jmNew = new JMenuItem("New")
-    val jmOpen = new JMenuItem("Open")
-    val jmSave = new JMenuItem("Save")
-    val jmSaveAs = new JMenuItem("Save As")
-
     jmNew.addActionListener(new ActionListener() {
       override def actionPerformed(ae: ActionEvent) {
         newCollection()
       }
     })
 
+    val jmOpen = new JMenuItem("Open")
     jmOpen.addActionListener(new ActionListener() {
       def actionPerformed(ae: ActionEvent) {
         openCollection()
       }
     })
 
+    val jmSave = new JMenuItem("Save")
     jmSave.addActionListener(new ActionListener() {
       def actionPerformed(ae: ActionEvent) {
         saveCollection()
       }
     })
 
+    val jmSaveAs = new JMenuItem("Save As")
     jmSaveAs.addActionListener(new ActionListener() {
       def actionPerformed(ae: ActionEvent) {
         saveCollection()
@@ -106,6 +101,14 @@ class TileCollectionWindow(
       }
     })
     panel.add(paletteChunksButton)
+    val pixelsButton = new JButton("Pixels")
+    pixelsButton.addActionListener(new ActionListener() {
+      def actionPerformed(ae: ActionEvent): Unit = {
+        val isVisible = pixelsWindow.isVisible
+        pixelsWindow.setVisible(!isVisible)
+      }
+    })
+    panel.add(pixelsButton)
     panel
   }
 

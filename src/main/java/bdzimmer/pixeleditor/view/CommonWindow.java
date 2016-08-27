@@ -6,14 +6,16 @@ package bdzimmer.pixeleditor.view;
 
 import java.awt.BorderLayout;
 
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+
 import javax.swing.JFrame;
 import javax.swing.JMenuBar;
 import javax.swing.JPanel;
 import javax.swing.JToolBar;
 
 
-
-public class CommonWindow extends JFrame {
+public abstract class CommonWindow extends JFrame {
 
   private static final long serialVersionUID = 0;
 
@@ -49,7 +51,13 @@ public class CommonWindow extends JFrame {
     }
 
     setDefaultCloseOperation(defaultCloseOperation);
-
+    
+    addWindowFocusListener(new WindowAdapter() {
+      public void windowGainedFocus(WindowEvent event) {
+	    onFocus();
+	  }
+    });
+    setFocusable(true);
   }
 
 
@@ -68,6 +76,11 @@ public class CommonWindow extends JFrame {
   protected JPanel panel() {return null;};
 
   protected StatusBar statusBar() {return null;};
+  
+  protected void onFocus() {
+	System.out.println("focus gained");
+	repaint();
+  }
 
 
 }

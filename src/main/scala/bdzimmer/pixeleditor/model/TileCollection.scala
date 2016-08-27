@@ -9,7 +9,7 @@ import scala.collection.mutable.ArrayBuffer
 
 import java.awt.Image
 
-import bdzimmer.pixeleditor.view.{PaletteChunk, PaletteChunksWindow}
+import bdzimmer.pixeleditor.view.PaletteChunksWindow
 
 case class ColorTriple(val r: Int, val g: Int, val b: Int)
 
@@ -19,8 +19,8 @@ object TileCollectionModel {
   case class TileCollection(
     settings: Settings,
     pixels: Pixels,
-    vmaps: Buffer[(String, VMap)],
-    paletteChunks: Buffer[(String, Array[ColorTriple])]
+    vmaps: Buffer[Named[VMap]],
+    paletteChunks: Buffer[Named[Array[ColorTriple]]]
   )
 
   case class Settings(
@@ -34,14 +34,11 @@ object TileCollectionModel {
     vmapSize: Int,
 
     // view settings
-    viewPaletteColumns: Int,
-    viewTileColumns: Int
+    viewPaletteCols: Int,
+    viewTileCols: Int
   )
 
-  case class Pixels(
-    colorsPerTile: Int,
-    tiles: Array[Tile]
-  )
+  case class Pixels(tiles: Array[Tile])
 
   case class VMap(
     palConfs: Buffer[PaletteConf],
@@ -62,6 +59,8 @@ object TileCollectionModel {
     chunks: Buffer[(Int, Buffer[ColorTriple])]
   )
 
+  case class Named[T](name: String, value: T)
+
 }
 
 
@@ -74,22 +73,25 @@ object Experiment {
   def main(args: Array[String]): Unit = {
 
     val settings = new Settings(
-        bitsPerChannel  = 6,
+        bitsPerChannel  = 5,
         paletteSize   = 256,
         colorsPerTile = 16,
         tileWidth     = 16,
         tileHeight    = 16,
         vmapSize      = 256,
-        viewPaletteColumns = 16,
-        viewTileColumns    = 16)
+        viewPaletteCols = 16,
+        viewTileCols    = 16)
 
-    def pal = (0 until 32).map(_ => ColorTriple(0, 0, 0)).toArray
+    val pal = (0 until 32).map(_ => ColorTriple(0, 0, 0)).toArray
     val names = List("Cave Floor", "Cave Walls", "Baloney", "Cheese", "Snowstorm")
-    val chunks = names.map(name => (name, pal.clone())).toBuffer
+    val chunks = names.map(name => Named(name, pal.clone())).toBuffer
+
+    val tiles = (0 until 512).map(_ =>
+      Tileset.emptyTile(settings.tileWidth, settings.tileHeight)).toArray
 
     val tc = TileCollection(
       settings,
-      Pixels(16, Array()),
+      Pixels(tiles),
       Buffer(),
       chunks)
 

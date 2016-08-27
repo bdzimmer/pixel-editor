@@ -171,7 +171,6 @@ public class PaletteEditorNew extends JFrame {
         repaint();
       }
     });
-
     setFocusable(true);
 
     addKeyListener(new KeyListener() {
