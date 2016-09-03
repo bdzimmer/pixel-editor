@@ -19,6 +19,7 @@ import bdzimmer.pixeleditor.model.TileContainer;
 import bdzimmer.pixeleditor.model.TileOptions;
 import bdzimmer.pixeleditor.model.Tileset;
 import bdzimmer.pixeleditor.model.TileAttributes;
+import bdzimmer.pixeleditor.model.Color;
 import bdzimmer.pixeleditor.controller.OldTilesetLoader;
 
 import java.awt.GridLayout;
@@ -46,8 +47,17 @@ public class Main extends CommonWindow {
   public final String contentDir;
   public final List<AssetMetadata> metadata;
 
-  private final int[][] globalPalette = new int[256][3];
-  private PaletteWindow paletteWindow = new PaletteWindow(globalPalette);
+  // private final int[][] globalPalette = new int[256][3];
+
+  private final Color[] globalPalette = new Color[256];
+
+  // private PaletteWindowOld paletteWindow = new PaletteWindowOld(globalPalette);
+
+  private PaletteWindow paletteWindow = new PaletteWindow(
+      "Global Palette",
+      new Color[256],
+      6, null);
+
   private final TileContainer tileContainer = new TileContainer();
 
   /**
@@ -142,7 +152,7 @@ public class Main extends CommonWindow {
         Main.this.contentDir + File.separator + ContentStructure.SpriteDir(),
         spriteTiles, spriteAttributes, "Sprites", spritesFileName,
         paletteWindow, tileContainer);
-    spriteWindow.getDosGraphics().setRgbPalette(globalPalette);
+    spriteWindow.getDosGraphics().setPalette(globalPalette);
 
     spriteWindow.setLocationRelativeTo(null);
 
@@ -151,7 +161,9 @@ public class Main extends CommonWindow {
 
   /// CommonWindow overrides
 
-  protected JMenuBar menuBar() {
+
+  @Override
+  protected JMenuBar buildMenuBar() {
 
     // Menubar
     JMenuBar mainMenu = new JMenuBar();
@@ -172,7 +184,8 @@ public class Main extends CommonWindow {
   }
 
 
-  protected JToolBar toolBar() {
+  @Override
+  protected JToolBar buildToolBar() {
 
     final JToolBar mainToolbar = new JToolBar();
 
@@ -192,7 +205,8 @@ public class Main extends CommonWindow {
   }
 
 
-  protected JPanel panel() {
+  @Override
+  protected JPanel buildPanel() {
 
     JPanel panel = new JPanel();
 
@@ -254,14 +268,15 @@ public class Main extends CommonWindow {
   }
 
 
-  protected StatusBar statusBar() {
+  @Override
+  protected StatusBar buildStatusBar() {
     return new StatusBar(20, 0, 0);
   }
 
   protected void onFocus() {
-	updateMemoryUsageDisplay();
+    updateMemoryUsageDisplay();
   }
-  
+
   private void updateMemoryUsageDisplay() {
     System.gc();
     Runtime runtime = Runtime.getRuntime();

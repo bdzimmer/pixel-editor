@@ -6,12 +6,13 @@
 package bdzimmer.pixeleditor.view;
 
 import bdzimmer.pixeleditor.controller.OldTilesetLoader;
-import bdzimmer.pixeleditor.model.DosGraphics;
+import bdzimmer.pixeleditor.model.IndexedGraphics;
 import bdzimmer.pixeleditor.model.Palette;
 import bdzimmer.pixeleditor.model.TileContainer;
 import bdzimmer.pixeleditor.model.TileOptions;
 import bdzimmer.pixeleditor.model.Tileset;
 import bdzimmer.pixeleditor.model.TileAttributes;
+import bdzimmer.pixeleditor.model.Color;
 import bdzimmer.pixeleditor.view.DragDrop.TileExportTransferHandler;
 
 import java.awt.Graphics;
@@ -51,7 +52,7 @@ public class TilesEditorWindow extends CommonWindow {
   private TileAttributes attrs;
   private String tileFilename;
 
-  private DosGraphics dosGraphics;
+  private IndexedGraphics dosGraphics;
   private ZoomedTileWindow zoomWindow;
   private AnimationWindow animationWindow;
 
@@ -108,14 +109,14 @@ public class TilesEditorWindow extends CommonWindow {
 
 
   // create an appropriately sized and scaled DosGraphics for the tileset
-  private DosGraphics createDosGraphics() {
-    DosGraphics dg = new DosGraphics(
+  private IndexedGraphics createDosGraphics() {
+    IndexedGraphics dg = new IndexedGraphics(
         (int)Math.ceil((float)tileset.tiles().length / tileset.tilesPerRow()) * tileset.height(),
         tileset.tilesPerRow() * tileset.width(),
         this.scale);
 
     dg.setGridDimensions(tileset.width(), tileset.height());
-    dg.setRgbPalette(paletteWindow.getDosGraphics().getRgbPalette());
+    dg.setPalette(paletteWindow.getPalette());
 
     return dg;
   }
@@ -152,13 +153,13 @@ public class TilesEditorWindow extends CommonWindow {
 
       for (int i = 0; i < udlength; i++) {
         for (int j = 0; j < lrlength; j++) {
-          tileset.tiles()[newTile].pixels()[i][j] = tileContainer.getTileBitmap()[i][j];
+          tileset.tiles()[newTile].bitmap()[i][j] = tileContainer.getTileBitmap()[i][j];
         }
       }
 
       // set the copy as the current tile
       tileContainer.setTileIndex(selectedTile);
-      tileContainer.setTileBitmap(tileset.tiles()[selectedTile].pixels());
+      tileContainer.setTileBitmap(tileset.tiles()[selectedTile].bitmap());
       repaint();
 
     }
@@ -174,18 +175,18 @@ public class TilesEditorWindow extends CommonWindow {
 
     // set the current tile
     tileContainer.setTileIndex(selectedTile);
-    tileContainer.setTileBitmap(tileset.tiles()[selectedTile].pixels());
+    tileContainer.setTileBitmap(tileset.tiles()[selectedTile].bitmap());
 
     // show in zoom window
     if (zoomWindow == null || !zoomWindow.isVisible()) {
       zoomWindow = new ZoomedTileWindow(
           "Zoom",
-          tileset.tiles()[selectedTile].pixels(),
-          paletteWindow);
-      zoomWindow.setTileWindow(this);
+          tileset.tiles()[selectedTile].bitmap(),
+          paletteWindow,
+          new DumbUpdater(this));
       zoomWindow.setLocationRelativeTo(this);
     } else {
-      zoomWindow.setTile(tileset.tiles()[selectedTile].pixels(), selectedTile);
+      zoomWindow.setTile(tileset.tiles()[selectedTile].bitmap(), selectedTile);
     }
     zoomWindow.toFront();
 
@@ -205,19 +206,19 @@ public class TilesEditorWindow extends CommonWindow {
 
     // determine which colors are equiv to black
     for (int i = 0; i < 256; i++) {
-      if (this.dosGraphics.getRgbPalette()[i][0] == 0
-          && this.dosGraphics.getRgbPalette()[i][1] == 0
-          && this.dosGraphics.getRgbPalette()[i][2] == 0) {
+
+      Color color = dosGraphics.getPalette()[i];
+      if (color.r() == 0 && color.g() == 0 && color.b() == 0) {
         blackColors[i] = true;
       }
     }
 
     for (int i = 0; i < tileset.tiles().length; i++) {
-      for (int j = 0; j < tileset.tiles()[0].pixels().length; j++) {
-        for (int k = 0; k < tileset.tiles()[0].pixels()[0].length; k++) {
-          if (blackColors[tileset.tiles()[i].pixels()[j][k]]) {
+      for (int j = 0; j < tileset.tiles()[0].bitmap().length; j++) {
+        for (int k = 0; k < tileset.tiles()[0].bitmap()[0].length; k++) {
+          if (blackColors[tileset.tiles()[i].bitmap()[j][k]]) {
             // temporarily...
-            tileset.tiles()[i].pixels()[j][k] = 0;
+            tileset.tiles()[i].bitmap()[j][k] = 0;
           }
         }
       }
@@ -229,14 +230,14 @@ public class TilesEditorWindow extends CommonWindow {
   // swap colors 0 and 255
   private void swapTransparency() {
     for (int i = 0; i < tileset.tiles().length; i++) {
-      for (int j = 0; j < tileset.tiles()[0].pixels().length; j++) {
-        for (int k = 0; k < tileset.tiles()[0].pixels()[0].length; k++) {
-          int tempColor = tileset.tiles()[i].pixels()[j][k];
+      for (int j = 0; j < tileset.tiles()[0].bitmap().length; j++) {
+        for (int k = 0; k < tileset.tiles()[0].bitmap()[0].length; k++) {
+          int tempColor = tileset.tiles()[i].bitmap()[j][k];
           if (tempColor == 0) {
-            tileset.tiles()[i].pixels()[j][k] = 255;
+            tileset.tiles()[i].bitmap()[j][k] = 255;
           }
           if (tempColor == 255) {
-            tileset.tiles()[i].pixels()[j][k] = 0;
+            tileset.tiles()[i].bitmap()[j][k] = 0;
           }
         }
       }
@@ -306,7 +307,7 @@ public class TilesEditorWindow extends CommonWindow {
   // load the tileset and update the palette
   private void loadTileset(String filename) {
     tileset = new OldTilesetLoader(filename, attrs).load();
-    Tileset.modPalette(tileset.palettes().apply(0), dosGraphics.getRgbPalette());
+    Tileset.modPalette(tileset.palettes().apply(0), dosGraphics.getPalette());
     tileFilename = filename;
     paletteWindow.repaint();
     updateTitle();
@@ -318,7 +319,7 @@ public class TilesEditorWindow extends CommonWindow {
   private void saveTileset(String filename) {
 
     // mutate the tileset's default palette before saving!!!
-    Palette newPal = Tileset.extractPalette(tileset.palettes().apply(0), dosGraphics.getRgbPalette());
+    Palette newPal = Tileset.extractPalette(tileset.palettes().apply(0), dosGraphics.getPalette());
     Palette pal = tileset.palettes().apply(0);
     for (int i = 0; i < pal.colors().length; i++) {
       pal.colors()[i] = newPal.colors()[i];
@@ -346,8 +347,8 @@ public class TilesEditorWindow extends CommonWindow {
   }
 
 
-
-  protected JMenuBar menuBar() {
+  @Override
+  protected JMenuBar buildMenuBar() {
 
     final JMenuBar mainMenu = new JMenuBar();
 
@@ -423,8 +424,8 @@ public class TilesEditorWindow extends CommonWindow {
   }
 
 
-
-  protected JToolBar toolBar() {
+  @Override
+  protected JToolBar buildToolBar() {
 
     final JToolBar mainToolbar = new JToolBar();
     final JToggleButton gridShow = new JToggleButton("Grid");
@@ -467,7 +468,8 @@ public class TilesEditorWindow extends CommonWindow {
   }
 
 
-  protected JPanel panel() {
+  @Override
+  protected JPanel buildPanel() {
 
     // tileset visualization
     dosGraphics = createDosGraphics();
@@ -498,7 +500,8 @@ public class TilesEditorWindow extends CommonWindow {
   }
 
 
-  protected StatusBar statusBar() {
+  @Override
+  protected StatusBar buildStatusBar() {
     return new StatusBar(6, 6, 20);
   }
 
@@ -507,7 +510,7 @@ public class TilesEditorWindow extends CommonWindow {
     return this.tileset;
   }
 
-  public DosGraphics getDosGraphics() {
+  public IndexedGraphics getDosGraphics() {
     return this.dosGraphics;
   }
 

@@ -10,7 +10,7 @@ import javax.swing.JButton
 
 import bdzimmer.util.StringUtils._
 
-import bdzimmer.pixeleditor.model.{ContentStructure, DosGraphics, Map, TileAttributes, TileOptions}
+import bdzimmer.pixeleditor.model.{ContentStructure, IndexedGraphics, Map, TileAttributes, TileOptions}
 import bdzimmer.pixeleditor.controller.OldTilesetLoader
 
 

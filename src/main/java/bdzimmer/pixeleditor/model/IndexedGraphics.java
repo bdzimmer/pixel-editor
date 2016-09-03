@@ -2,7 +2,6 @@
 
 package bdzimmer.pixeleditor.model;
 
-import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.image.BufferedImage;
@@ -11,7 +10,9 @@ import java.awt.image.IndexColorModel;
 
 import javax.swing.JPanel;
 
-public class DosGraphics extends JPanel {
+import bdzimmer.pixeleditor.model.Color;
+
+public class IndexedGraphics extends JPanel {
   private static final long serialVersionUID = 1; // Meaningless junk.
 
   private final BufferedImage screenBuffer;
@@ -21,8 +22,14 @@ public class DosGraphics extends JPanel {
   private final int height;
   private final int width; // size
 
-  private final int[] palette = new int[256];
-  private int[][] rgbPalette = new int[256][3];
+  // private final int[] palette = new int[256];
+  // private int[][] rgbPalette = new int[256][3];
+
+  // private final int bitsPerChannel;
+  private final int colorFactor;
+
+  private int[] palettePacked;
+  private Color[] palette;
 
   private boolean showGrid = false;
   private int gridWidth  = 0;
@@ -37,12 +44,20 @@ public class DosGraphics extends JPanel {
    * @param width      horizontal dimension
    * @param scale      pixel scaling
    */
-  public DosGraphics(int height, int width, int scale) {
+  public IndexedGraphics(
+      Color[] palette,
+      int bitsPerChannel,
+      int height, int width, int scale) {
+
+    // this.bitsPerChannel = bitsPerChannel;
+    this.colorFactor = (1 << (8 - bitsPerChannel));
 
     this.height = height;
     this.width = width;
     this.scale = scale;
 
+    this.palette = palette;
+    this.palettePacked = new int[palette.length];
 
     screenBuffer = new BufferedImage(
         this.width * this.scale, this.height * this.scale, BufferedImage.TYPE_INT_RGB);
@@ -55,12 +70,21 @@ public class DosGraphics extends JPanel {
   }
 
 
-  public DosGraphics() {
+  public IndexedGraphics() {
+    // VGA mode 13h
     this(240, 320, 2);
   }
 
 
+  public IndexedGraphics(int height, int width, int scale) {
+    // default to old VGA settings
+    this(new Color[256], 6, height, width, scale);
+  }
+
+
   // functions for drawing tiles and tilesets
+
+  // all of this needs to be moved to tileutil
 
   /**
    * Draw a tile without transparency.
@@ -109,20 +133,23 @@ public class DosGraphics extends JPanel {
    */
   public void drawTileset(Tileset tileset) {
     if (tileset.tiles() != null) {
-      int numRows = (int)Math.ceil((float)tileset.tiles().length / tileset.tilesPerRow());
-      for (int i = 0; i < numRows; i++) {
-        for (int j = 0; j < tileset.tilesPerRow(); j++) {
-          int curTile = i * tileset.tilesPerRow() + j;
-          if (curTile < tileset.tiles().length) {
-            drawTile(
-                tileset.tiles()[curTile].pixels(),
-                i * tileset.height(),
-                j * tileset.width());
-          }
+      drawTileset(tileset.tiles(), tileset.width(), tileset.height(), tileset.tilesPerRow());
+    }
+  }
+
+
+  public void drawTileset(Tile[] tiles, int tileWidth, int tileHeight, int tilesPerRow) {
+    int numRows = (int)Math.ceil((float)tiles.length / tilesPerRow);
+    for (int i = 0; i < numRows; i++) {
+      for (int j = 0; j < tilesPerRow; j++) {
+        int curTile = i * tilesPerRow + j;
+        if (curTile < tiles.length) {
+          drawTile(tiles[curTile].bitmap(), i * tileWidth, j * tileHeight);
         }
       }
     }
   }
+
 
   /**
    * Set a pixel at a given location.
@@ -140,7 +167,7 @@ public class DosGraphics extends JPanel {
 
     int rowLength = width * scale;
     int upperleft = y * scale * rowLength + x * scale;
-    int curColor = palette[colorIndex];
+    int curColor = palettePacked[colorIndex];
 
     if (this.scale == 2) {
 
@@ -192,22 +219,22 @@ public class DosGraphics extends JPanel {
   public void updateClut() {
     // this also requires redrawing of all DosGraphics' to take effect
     for (int i = 0; i < 256; i++) {
-      palette[i] = 255 << 24 | (rgbPalette[i][0] * 4) << 16
-          | (rgbPalette[i][1] * 4) << 8 | (rgbPalette[i][2] * 4);
+      palettePacked[i] = 255 << 24 | (palette[i].r() * colorFactor) << 16 | (palette[i].g() * colorFactor) << 8 | (palette[i].b() * colorFactor);
     }
 
   }
 
-  public int[] getPalette() {
+  public int[] getPalettePacked() {
+    return this.palettePacked;
+  }
+
+  public Color[] getPalette() {
     return this.palette;
   }
 
-  public int[][] getRgbPalette() {
-    return this.rgbPalette;
-  }
-
-  public void setRgbPalette(int[][] rgbPalette) {
-    this.rgbPalette = rgbPalette;
+  public void setPalette(Color[] palette) {
+    this.palette = palette;
+    this.palettePacked = new int[this.palette.length];
   }
 
   public boolean getShowGrid() {
@@ -225,14 +252,15 @@ public class DosGraphics extends JPanel {
 
   // get an IndexColorModel for part of the range
   public IndexColorModel getIndexColorModel(int start, int end) {
+
     byte[] r = new byte[256];
     byte[] g = new byte[256];
     byte[] b = new byte[256];
 
     for (int i = start; i <= end; i++) {
-      r[i] = (byte)((rgbPalette[i][0] * 4) & 0xFF);
-      g[i] = (byte)((rgbPalette[i][1] * 4) & 0xFF);
-      b[i] = (byte)((rgbPalette[i][2] * 4) & 0xFF);
+      r[i] = (byte)((palette[i].r() * colorFactor) & 0xFF);
+      g[i] = (byte)((palette[i].g() * colorFactor) & 0xFF);
+      b[i] = (byte)((palette[i].b() * colorFactor) & 0xFF);
     }
 
     // weird things happen when you try to set a transparent index (extra argument)
@@ -246,10 +274,10 @@ public class DosGraphics extends JPanel {
   /**
    * Draw the component.
    */
-  public void paint(Graphics graphics) {
+  public void paintComponent(Graphics graphics) {
     super.paintComponent(graphics); // Draw things in superclass
 
-    graphics.setColor(Color.BLACK);
+    graphics.setColor(java.awt.Color.BLACK);
     graphics.fillRect(0, 0, width * 2 - 1, height * 2 - 1);
     graphics.drawImage(screenBuffer, 0, 0, null);
     if (showGrid) drawGrid(graphics);
@@ -257,8 +285,9 @@ public class DosGraphics extends JPanel {
 
   // helper function for drawing a grid
   private void drawGrid(Graphics g) {
-    g.setColor(new Color(
-        rgbPalette[255][0] * 4, rgbPalette[255][1] * 4, rgbPalette[255][2] * 4));
+    int maxIdx = palette.length - 1;
+    Color topColor = palette[maxIdx];
+    g.setColor(new java.awt.Color(topColor.r() * colorFactor, topColor.g() * colorFactor, topColor.b() * colorFactor));
     for (int i = 0; i < height * scale; i += gridHeight * scale) {
       g.drawLine(0, i, width * scale - 1, i);
     }

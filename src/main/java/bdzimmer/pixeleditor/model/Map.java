@@ -27,15 +27,15 @@ public class Map {
   public int pmud;
   public int pmlr;
 
-  
+
   public Map() {
     // no-arg constructor - blank map
   }
-  
+
 
   /**
    * Load the map from a file.
-   * 
+   *
    * @param mapFile File to load.
    */
   public Map(File mapFile) {
@@ -125,14 +125,14 @@ public class Map {
 
   }
 
-  
+
   /**
    * Save the map to a file.
-   * 
+   *
    * @param mapFile File to save
    */
   public void save(File mapFile) {
-    
+
     // open file for input
     try {
       QbOutputStream mapOut = new QbOutputStream(new FileOutputStream(mapFile));
@@ -237,16 +237,16 @@ public class Map {
     }
   }
 
-  
+
   /**
-   * Get an image of the map. 
-   * 
+   * Get an image of the map.
+   *
    * @param tiles         Tiles object to use
    * @param palette       palette to use
    * @return  image representation of the map
    */
   public BufferedImage image(Tileset tiles, Palette palette) {
-    
+
     BufferedImage mapImage = Tileset.indexedImage(
         (mlr + 1) * tiles.width(),
         (mud + 1) * tiles.height(),
@@ -256,18 +256,18 @@ public class Map {
 
     for (int i = 0; i <= mud; i++) {
       for (int j = 0; j <= mlr; j++) {
-        
-        for (int k = 0; k < tiles.height(); k++) {    
+
+        for (int k = 0; k < tiles.height(); k++) {
           wr.setPixels(
               j * tiles.width(), i * tiles.height() + k,
               tiles.width(), 1,
-              tiles.tiles()[this.map[i][j]].pixels()[k]);
+              tiles.tiles()[this.map[i][j]].bitmap()[k]);
         }
-        
+
         if (this.overMap[i][j] > 0) {
           for (int k = 0; k < tiles.height(); k++) {
             for (int l = 0; l < tiles.width(); l++) {
-              int curColor = tiles.tiles()[this.overMap[i][j]].pixels()[k][l];
+              int curColor = tiles.tiles()[this.overMap[i][j]].bitmap()[k][l];
               if (curColor != 255) {
                 wr.setPixels(
                     j * tiles.width() + l, i * tiles.height() + k,
@@ -282,15 +282,15 @@ public class Map {
     }
 
     return mapImage;
-    
+
   }
-  
-  
-  
-  
+
+
+
+
   /**
    * Wipe out the contents of the Map.
-   * 
+   *
    */
   public void erase() {
     mapDesc = "";
@@ -304,5 +304,5 @@ public class Map {
     }
 
   }
-  
+
 }

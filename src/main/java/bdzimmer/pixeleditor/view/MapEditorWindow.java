@@ -289,7 +289,8 @@ public class MapEditorWindow extends CommonWindow {
   }
 
 
-  protected JMenuBar menu() {
+  @Override
+  protected JMenuBar buildMenuBar() {
 
     JMenuBar mainMenu = new JMenuBar();
 
@@ -352,7 +353,7 @@ public class MapEditorWindow extends CommonWindow {
         Tileset tiles = MapEditorWindow.this.tilesEditorWindow.getTileSet();
         Palette palette = Tileset.extractPalette(
             tiles.palettes().apply(0),
-            MapEditorWindow.this.tilesEditorWindow.getDosGraphics().getRgbPalette());
+            MapEditorWindow.this.tilesEditorWindow.getDosGraphics().getPalette());
         new ImageWindow(MapEditorWindow.this.map.image(tiles, palette));
       }
     });
@@ -377,7 +378,8 @@ public class MapEditorWindow extends CommonWindow {
   }
 
 
-  protected JToolBar toolBar() {
+  @Override
+  protected JToolBar buildToolBar() {
 
     final JToolBar mainToolbar = new JToolBar();
     final JToggleButton gridShow = new JToggleButton("Grid");
@@ -457,12 +459,13 @@ public class MapEditorWindow extends CommonWindow {
   }
 
 
-  protected JPanel panel() {
+  @Override
+  protected JPanel buildPanel() {
 
     JPanel panel = new MapViewPanel(
         this.map,
         this.tilesEditorWindow.getTileSet(),
-        this.tilesEditorWindow.getDosGraphics().getRgbPalette());
+        this.tilesEditorWindow.getDosGraphics().getPalette());
 
     panel.setToolTipText("<html>right click: grab tile<br />left click: set tile<br />mouse wheel: zoom<br />arrow keys: scroll</html>");
 
@@ -498,7 +501,9 @@ public class MapEditorWindow extends CommonWindow {
 
   }
 
-  protected StatusBar statusBar() {
+
+  @Override
+  protected StatusBar buildStatusBar() {
     return new StatusBar(6, 6, 20);
   }
 

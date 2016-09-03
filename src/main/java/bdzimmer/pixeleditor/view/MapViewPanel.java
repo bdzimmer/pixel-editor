@@ -5,12 +5,12 @@
 
 package bdzimmer.pixeleditor.view;
 
-import bdzimmer.pixeleditor.model.DosGraphics;
+import bdzimmer.pixeleditor.model.IndexedGraphics;
 import bdzimmer.pixeleditor.model.Map;
 import bdzimmer.pixeleditor.model.Tileset;
+import bdzimmer.pixeleditor.model.Color;
 
 import java.awt.BorderLayout;
-import java.awt.Color;
 import java.awt.Graphics;
 
 import javax.swing.JPanel;
@@ -20,10 +20,10 @@ public class MapViewPanel extends JPanel {
 
   private static final long serialVersionUID = 1L;
 
-  private DosGraphics dosGraphics;
+  private IndexedGraphics dosGraphics;
 
   private Tileset tileset;
-  private int[][] rgbPalette;
+  private Color[] rgbPalette;
 
   private boolean parallaxEdit = false;
 
@@ -48,7 +48,7 @@ public class MapViewPanel extends JPanel {
    * @param tileSet       tiles to use when displaying the map
    * @param rgbPalette    palette for displaying the map
    */
-  public MapViewPanel(Map map, Tileset tileset, int[][] rgbPalette) {
+  public MapViewPanel(Map map, Tileset tileset, Color[] rgbPalette) {
     this.map = map;
     this.tileset = tileset;
     this.rgbPalette = rgbPalette;
@@ -69,16 +69,16 @@ public class MapViewPanel extends JPanel {
   }
 
 
-  private DosGraphics createDosGraphics() {
+  private IndexedGraphics createDosGraphics() {
 
-    DosGraphics dg =  new DosGraphics(
+    IndexedGraphics dg =  new IndexedGraphics(
         numVerticalTiles * tileset.height(),
         numHorizontalTiles * tileset.width(),
         scale);
 
     dg.setGridDimensions(tileset.width(), tileset.height());
     dg.setShowGrid(dispGridlines);
-    dg.setRgbPalette(rgbPalette);
+    dg.setPalette(rgbPalette);
     dg.updateClut();
 
     return dg;
@@ -101,7 +101,7 @@ public class MapViewPanel extends JPanel {
               curTile = 0;
             }
             this.dosGraphics.drawTile(
-                tileset.tiles()[curTile].pixels(),
+                tileset.tiles()[curTile].bitmap(),
                 i* tileset.height(), j * tileset.width());
 
           }
@@ -120,7 +120,7 @@ public class MapViewPanel extends JPanel {
                 curTile = 0;
               }
               this.dosGraphics.drawTile(
-                  tileset.tiles()[curTile].pixels(),
+                  tileset.tiles()[curTile].bitmap(),
                   i * this.tileset.height(), j * tileset.width());
             } else {
               this.dosGraphics.drawTile(
@@ -142,7 +142,7 @@ public class MapViewPanel extends JPanel {
               }
               if (curTile > 0) {
                 this.dosGraphics.drawTileTrans(
-                    tileset.tiles()[curTile].pixels(),
+                    tileset.tiles()[curTile].bitmap(),
                     i * tileset.height(),
                     j * tileset.width());
               }
@@ -174,7 +174,7 @@ public class MapViewPanel extends JPanel {
     // Bounds drawing
     if (this.dispBounds && this.tileset != null) {
 
-      dgGraphics.setColor(new Color(dosGraphics.getPalette()[255]));
+      dgGraphics.setColor(new java.awt.Color(dosGraphics.getPalettePacked()[255]));
       for (int i = 0; i < 12; i++) {
         for (int j = 0; j < 20; j++) {
 
@@ -227,7 +227,7 @@ public class MapViewPanel extends JPanel {
         }
       }
 
-      dgGraphics.setColor(new Color(dosGraphics.getPalette()[10]));
+      dgGraphics.setColor(new java.awt.Color(dosGraphics.getPalettePacked()[10]));
 
       if (dispOver) {
         for (int i = 0; i < 12; i++) {
@@ -350,7 +350,7 @@ public class MapViewPanel extends JPanel {
     this.tileset = tileset;
   }
 
-  public DosGraphics getDosGraphics() {
+  public IndexedGraphics getDosGraphics() {
     return this.dosGraphics;
   }
 

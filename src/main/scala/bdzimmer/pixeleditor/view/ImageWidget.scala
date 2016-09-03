@@ -85,9 +85,11 @@ object ImageWidget {
 
 // single-column scrollpane of image widgets of potentially different heights and widths
 // they can also be selected
-class WidgetScroller(widgets: Buffer[ImageWidget]) extends JScrollPane {
+class WidgetScroller(
+    widgets: Buffer[ImageWidget],
+    selectable: Boolean) extends JScrollPane {
 
-  private var selectedIdx = 0
+  private var selectedIdx = -1
 
   val margin = 5
   val scrollingSurface = new JPanel()
@@ -121,10 +123,10 @@ class WidgetScroller(widgets: Buffer[ImageWidget]) extends JScrollPane {
     widgets.foreach(widget => {
       println("adding " + widget.title)
 
-      if (widget.getMouseListeners.length == 0) {
+      if (selectable && widget.getMouseListeners.length == 0) {
         widget.addMouseListener(new MouseAdapter() {
           override def mouseClicked(event: MouseEvent): Unit = {
-            if (selectedIdx < widgets.length) {
+            if (selectedIdx >= 0 && selectedIdx < widgets.length) {
               widgets(selectedIdx).setSelected(false)
             }
             selectedIdx = widgets.indexOf(widget)
@@ -151,3 +153,7 @@ class WidgetScroller(widgets: Buffer[ImageWidget]) extends JScrollPane {
   }
 
 }
+
+
+
+

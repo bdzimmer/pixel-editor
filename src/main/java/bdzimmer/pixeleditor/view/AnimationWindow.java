@@ -22,7 +22,7 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 
 import bdzimmer.pixeleditor.model.Direction;
-import bdzimmer.pixeleditor.model.DosGraphics;
+import bdzimmer.pixeleditor.model.IndexedGraphics;
 import bdzimmer.pixeleditor.model.TileContainer;
 import bdzimmer.pixeleditor.view.DragDrop.TileImportTransferHandler;
 
@@ -53,7 +53,7 @@ public class AnimationWindow extends CommonWindow {
   private int tileIndex = 0;
 
   private Thread animationThread = null;
-  private DosGraphics dosGraphics;
+  private IndexedGraphics dosGraphics;
 
   private TileContainer tc = new TileContainer();     // for background tile
   private int bgOffsetX = 0;
@@ -90,13 +90,13 @@ public class AnimationWindow extends CommonWindow {
   }
 
 
-  private DosGraphics createDosGraphics() {
-    DosGraphics dg = new DosGraphics(
+  private IndexedGraphics createDosGraphics() {
+    IndexedGraphics dg = new IndexedGraphics(
         parent.getTileSet().height() + borderY * 2,
         parent.getTileSet().width()  + borderX * 2,
         this.scale);
 
-    dg.setRgbPalette(parent.getPaletteWindow().getDosGraphics().getRgbPalette());
+    dg.setPalette(parent.getPaletteWindow().getPalette());
     return dg;
   }
 
@@ -137,7 +137,7 @@ public class AnimationWindow extends CommonWindow {
       }
     }
 
-    dosGraphics.drawTileTrans(parent.getTileSet().tiles()[tileIndex].pixels(), borderY, borderX);
+    dosGraphics.drawTileTrans(parent.getTileSet().tiles()[tileIndex].bitmap(), borderY, borderX);
     dosGraphics.repaint();
   }
 
@@ -164,7 +164,8 @@ public class AnimationWindow extends CommonWindow {
 
   /// CommonWindow overrides
 
-  protected JPanel panel() {
+  @Override
+  protected JPanel buildPanel() {
     dosGraphics = createDosGraphics();
 
     // allow dropping a tile on
@@ -178,7 +179,8 @@ public class AnimationWindow extends CommonWindow {
   }
 
 
-  protected JToolBar toolBar() {
+  @Override
+  protected JToolBar buildToolBar() {
 
     final JToolBar mainToolbar = new JToolBar();
     final JTextField totalFramesInput = new JTextField(Integer.toString(totalFrames), 2);

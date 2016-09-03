@@ -1,14 +1,16 @@
-// Copyright (c) 2015 Ben Zimmer. All rights reserved.
+// Copyright (c) 2016 Ben Zimmer. All rights reserved.
+
+// A more flexible version of PaletteWindow using the new data model
+
 
 package bdzimmer.pixeleditor.view;
 
-
 import bdzimmer.pixeleditor.controller.PaletteUtils;
-import bdzimmer.pixeleditor.model.DosGraphics;
+import bdzimmer.pixeleditor.model.Color;
+import bdzimmer.pixeleditor.view.WidgetUpdater;
 
 import java.awt.BorderLayout;
 import java.awt.Canvas;
-import java.awt.Color;
 import java.awt.FlowLayout;
 import java.awt.Graphics;
 import java.awt.event.FocusAdapter;
@@ -17,6 +19,7 @@ import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.awt.image.BufferedImage;
 
 import javax.swing.JFrame;
 import javax.swing.JLabel;
@@ -27,249 +30,273 @@ import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
 
-class PaletteWindow extends JFrame {
+
+// TODO: use CommonWindow
+// TODO: consider scala rewrite
+
+public class PaletteWindow extends JFrame {
 
   private static final long serialVersionUID = 1L;
   public static final Canvas cColorLabel = new Canvas();
 
-  private final DosGraphics dosGraphics = new DosGraphics(128, 128, 2);
+  private static final int swatchSize = 24;
+  private static final int cols = 16;
 
-  private JSpinner redNumber = new JSpinner();
-  private JSpinner greenNumber = new JSpinner();
-  private JSpinner blueNumber = new JSpinner();
+  private final Color[] palette;
+  private final BufferedImage image;
+  private final ImagePanel imagePanel;
+  private final int length;
+  private final int rows;
+  private final int colorFactor;
+  private final int bitsPerChannel;
+  private final Updater updater;
 
+  private JSpinner rVal = new JSpinner();
+  private JSpinner gVal = new JSpinner();
+  private JSpinner bVal = new JSpinner();
 
-  private int colorIndex = 0;
+  private int selectedIdx = 0;
 
+  public PaletteWindow(
+		  String title,
+		  Color[] palette,
+		  int bitsPerChannel,
+		  Updater updater) {
 
-  public PaletteWindow(int[][] rgbPalette) {
+    setTitle(title);
+    this.palette = palette;
+    length = this.palette.length;
+    this.updater = updater;
 
-    setLayout(new BorderLayout(5, 5));
-    setTitle("Palette");
+    rows = (length + cols - 1) / cols;
+    image = PaletteWindow.imageForPalette(length, cols, swatchSize);
+    imagePanel = new ImagePanel(image);
 
-    this.dosGraphics.setRgbPalette(rgbPalette);
-    add(this.dosGraphics);
-    this.setSize(270, 400);
+    add(imagePanel);
 
     // Currently selected color
     cColorLabel.setSize(64, 64);
-    cColorLabel.setBackground(new Color(0, 0, 0));
+    cColorLabel.setBackground(new java.awt.Color(0, 0, 0));
 
-    redNumber.setModel(new SpinnerNumberModel(0, 0, 63, 1));
-    greenNumber.setModel(new SpinnerNumberModel(0, 0, 63, 1));
-    blueNumber.setModel(new SpinnerNumberModel(0, 0, 63, 1));
+    this.bitsPerChannel = bitsPerChannel;
+    final int colorMax = (1 << bitsPerChannel) - 1;
+    colorFactor = (1 << (8 - bitsPerChannel));
 
-    redNumber.addChangeListener(new ChangeListener() {
+    rVal.setModel(new SpinnerNumberModel(0, 0, colorMax, 1));
+    gVal.setModel(new SpinnerNumberModel(0, 0, colorMax, 1));
+    bVal.setModel(new SpinnerNumberModel(0, 0, colorMax, 1));
+
+    rVal.addChangeListener(new ChangeListener() {
       public void stateChanged(ChangeEvent event) {
-        SpinnerNumberModel currentModel = (SpinnerNumberModel) ((JSpinner) event
-            .getSource()).getModel();
-        dosGraphics.getRgbPalette()[colorIndex][0] = (Integer) currentModel
-            .getValue();
-        refreshPalette();
+        SpinnerNumberModel currentModel = (SpinnerNumberModel)((JSpinner) event.getSource()).getModel();
+        int red = (Integer)currentModel.getValue();
+        Color cc = PaletteWindow.this.palette[selectedIdx];
+        Color nc = new Color(red, cc.g(), cc.b());
+        PaletteWindow.this.palette[selectedIdx] = nc;
+        update();
       }
 
     });
-    greenNumber.addChangeListener(new ChangeListener() {
+    gVal.addChangeListener(new ChangeListener() {
       public void stateChanged(ChangeEvent event) {
-        SpinnerNumberModel currentModel = (SpinnerNumberModel) ((JSpinner) event
-            .getSource()).getModel();
-        dosGraphics.getRgbPalette()[colorIndex][1] = (Integer) currentModel
-            .getValue();
-        refreshPalette();
+        SpinnerNumberModel currentModel = (SpinnerNumberModel)((JSpinner) event.getSource()).getModel();
+        int green = (Integer)currentModel.getValue();
+        Color cc = PaletteWindow.this.palette[selectedIdx];
+        Color nc = new Color(cc.r(), green, cc.b());
+        PaletteWindow.this.palette[selectedIdx] = nc;
+        update();
       }
 
     });
-    blueNumber.addChangeListener(new ChangeListener() {
+    bVal.addChangeListener(new ChangeListener() {
       public void stateChanged(ChangeEvent event) {
-        SpinnerNumberModel currentModel = (SpinnerNumberModel) ((JSpinner) event
-            .getSource()).getModel();
-        dosGraphics.getRgbPalette()[colorIndex][2] = (Integer) currentModel
-            .getValue();
-        refreshPalette();
+        SpinnerNumberModel currentModel = (SpinnerNumberModel)((JSpinner) event.getSource()).getModel();
+        int blue = (Integer)currentModel.getValue();
+        Color cc = PaletteWindow.this.palette[selectedIdx];
+        Color nc = new Color(cc.r(), cc.g(), blue);
+        PaletteWindow.this.palette[selectedIdx] = nc;
+        update();
       }
 
     });
 
-    this.dosGraphics.setToolTipText("<html>right click: grab color<br />left click: set color<br />alt-left click: interpolate colors</html>");
+    imagePanel.setToolTipText("<html>right click: grab color<br />left click: set color<br />alt-left click: interpolate colors</html>");
 
-    this.dosGraphics.addMouseListener(new MouseAdapter() {
+    imagePanel.addMouseListener(new MouseAdapter() {
       public void mouseClicked(MouseEvent event) {
 
-        // System.out.println(event.getX() + " " + event.getY());
+        int clickedIdx = (int) ((event.getY() / swatchSize) * cols) + (int) (event.getX() / swatchSize);
+        // System.out.println("clicked color: " + clickedColor + " " + PaletteEditorNew.this.palette[clickedColor]);
 
-        int clickedColor = (int) ((event.getY() / 16) * 16) + (int) (event.getX() / 16);
-        if (clickedColor < 256 && clickedColor >= 0) {
+        if (clickedIdx < length && clickedIdx >= 0) {
 
           if (event.isMetaDown()) {
             // right click - grab color
-            colorIndex = clickedColor;
-
+            selectedIdx = clickedIdx;
           } else {
-            // left click -  set color
-
-            int[][] pal = dosGraphics.getRgbPalette();
-
+            // left click -  interpolate or copy set color
             if (event.isAltDown()) {
-              PaletteUtils.interpolateLinear(pal, colorIndex, clickedColor);
+              System.out.println("linear interpolation");
+              PaletteUtils.interpolateLinear(
+                  PaletteWindow.this.palette, selectedIdx, clickedIdx);
             } else {
-              pal[clickedColor][0] = pal[colorIndex][0];
-              pal[clickedColor][1] = pal[colorIndex][1];
-              pal[clickedColor][2] = pal[colorIndex][2];
+              Color srcColor = PaletteWindow.this.palette[selectedIdx];
+              PaletteWindow.this.palette[clickedIdx] = new Color(srcColor.r(), srcColor.g(), srcColor.b());
             }
 
             // update after done updating the colors / current selection
-            colorIndex = clickedColor;
+            selectedIdx = clickedIdx;
 
           }
 
-          repaint();
+          update();
 
         }
       }
     });
 
     JPanel sp = new JPanel();
-    sp.setMaximumSize(this.dosGraphics.getSize());
+    sp.setMaximumSize(imagePanel.getSize());
     sp.setLayout(new FlowLayout(FlowLayout.LEFT, 0, 0));
     sp.add(new JLabel("R"));
-    sp.add(redNumber);
+    sp.add(rVal);
     sp.add(new JLabel("G"));
-    sp.add(greenNumber);
+    sp.add(gVal);
     sp.add(new JLabel("B"));
-    sp.add(blueNumber);
+    sp.add(bVal);
     sp.add(cColorLabel);
 
-    this.add(sp, BorderLayout.SOUTH);
+    add(sp, BorderLayout.SOUTH);
 
     addFocusListener(new FocusAdapter() {
       public void focusGained(FocusEvent event) {
-        repaint();
-        // System.out.println("Focus gained!");
+        System.out.println("palette editor Focus gained!");
+        update();
       }
     });
+    setFocusable(true);
 
-    // Adjust current colors with a, z, s, x, d, c keys
-    this.setFocusable(true);
-    this.addKeyListener(new KeyListener() {
+    addKeyListener(new KeyListener() {
 
       public void keyPressed(KeyEvent event) {
 
+        Color color = PaletteWindow.this.palette[selectedIdx];
+        int r = color.r();
+        int g = color.g();
+        int b = color.b();
+
         if (event.getKeyCode() == KeyEvent.VK_A) {
-          dosGraphics.getRgbPalette()[colorIndex][0]++;
-          if (dosGraphics.getRgbPalette()[colorIndex][0] > 63) {
-            dosGraphics.getRgbPalette()[colorIndex][0] = 0;
-          }
-
+          r++; if (r > colorMax) r = 0;
         } else if (event.getKeyCode() == KeyEvent.VK_Z) {
-          dosGraphics.getRgbPalette()[colorIndex][0]--;
-          if (dosGraphics.getRgbPalette()[colorIndex][0] < 0) {
-            dosGraphics.getRgbPalette()[colorIndex][0] = 63;
-          }
-
+          r--; if (r < 0) r = colorMax;
         } else if (event.getKeyCode() == KeyEvent.VK_S) {
-          dosGraphics.getRgbPalette()[colorIndex][1]++;
-          if (dosGraphics.getRgbPalette()[colorIndex][1] > 63) {
-            dosGraphics.getRgbPalette()[colorIndex][1] = 0;
-          }
-
+          g++; if (g > colorMax) g = 0;
         } else if (event.getKeyCode() == KeyEvent.VK_X) {
-          dosGraphics.getRgbPalette()[colorIndex][1]--;
-          if (dosGraphics.getRgbPalette()[colorIndex][1] < 0) {
-            dosGraphics.getRgbPalette()[colorIndex][1] = 63;
-          }
-
+          g--; if (g < 0) g = colorMax;
         } else if (event.getKeyCode() == KeyEvent.VK_D) {
-          dosGraphics.getRgbPalette()[colorIndex][2]++;
-          if (dosGraphics.getRgbPalette()[colorIndex][2] > 63) {
-            dosGraphics.getRgbPalette()[colorIndex][2] = 0;
-          }
-
+          b++; if (b > colorMax) b = 0;
         } else if (event.getKeyCode() == KeyEvent.VK_C) {
-          dosGraphics.getRgbPalette()[colorIndex][2]--;
-          if (dosGraphics.getRgbPalette()[colorIndex][2] < 0) {
-            dosGraphics.getRgbPalette()[colorIndex][2] = 63;
-          }
-
+          b--; if (b < 0) b = colorMax;
         }
 
-        redNumber.setValue(dosGraphics.getRgbPalette()[colorIndex][0]);
-        greenNumber.setValue(dosGraphics.getRgbPalette()[colorIndex][1]);
-        blueNumber.setValue(dosGraphics.getRgbPalette()[colorIndex][2]);
-        dosGraphics.updateClut();
-        refreshPalette();
-
+        PaletteWindow.this.palette[selectedIdx] = new Color(r, g, b);
+        update();
       }
 
-      public void keyReleased(KeyEvent event) {
-
-      }
-
-      public void keyTyped(KeyEvent event) {
-
-      }
-
+      public void keyReleased(KeyEvent event) {}
+      public void keyTyped(KeyEvent event) {}
     });
 
-    this.dosGraphics.getRgbPalette()[255][0] = 50; // Funky Pink
-    this.dosGraphics.getRgbPalette()[255][2] = 50;
-    this.dosGraphics.getRgbPalette()[10][1] = 63; // Bright Green
-    this.dosGraphics.updateClut();
-    this.repaint();
 
     pack();
-    this.setResizable(false);
+    setResizable(false);
+
   }
+
 
   public void refreshPalette() {
 
-    dosGraphics.updateClut();
+    // redraw palette swatches
 
-    for (int i = 0; i < 16; i++) {
-      for (int j = 0; j < 16; j++) {
-        for (int k = 0; k < 8; k++) {
-          for (int l = 0; l < 8; l++) {
-            dosGraphics.setPixel(i * 8 + k, j * 8 + l, i * 16 + j);
-          }
+    PaletteWindow.drawPalette(image, palette, bitsPerChannel, rows, cols, swatchSize);
+
+    Graphics gr = image.getGraphics();
+
+    // draw the selection
+    final java.awt.Color selectColor = new java.awt.Color(230, 0, 230);
+    gr.setColor(selectColor);
+    int x = (selectedIdx % cols) * swatchSize;
+    int y = (int) (selectedIdx / cols) * swatchSize;
+    gr.drawRect(x, y, swatchSize, swatchSize);
+
+    imagePanel.repaint();
+
+    // update the color sample and spinners
+    Color color = palette[selectedIdx];
+    cColorLabel.setBackground(new java.awt.Color(
+        color.r() * colorFactor, color.g() * colorFactor, color.b() * colorFactor));
+
+    updateSpinners();
+
+  }
+
+
+  public void updateSpinners() {
+    final Color color = palette[selectedIdx];
+    rVal.setValue(color.r());
+    gVal.setValue(color.g());
+    bVal.setValue(color.b());
+  }
+
+
+  public void update() {
+    if (updater != null) {
+      updater.update();
+    }
+    refreshPalette();
+  }
+
+
+  public int getSelectedIdx() {
+    return selectedIdx;
+  }
+
+  public void setSelectedIdx(int selectedIdx) {
+    this.selectedIdx = selectedIdx;
+  }
+
+  public Color[] getPalette() {
+    return palette;
+  }
+
+  ///
+
+  public static void drawPalette(BufferedImage image, Color[] palette, int bitsPerChannel, int rows, int cols, int swatchSize) {
+
+    int colorFactor = (1 << (8 - bitsPerChannel));
+    Graphics gr = image.getGraphics();
+
+    for (int i = 0; i < rows; i++) {
+      for (int j = 0; j < cols; j++) {
+        final int colorIdx = i * cols + j;
+        if (colorIdx < palette.length) {
+          Color color = palette[colorIdx];
+          gr.setColor(new java.awt.Color(
+              color.r() * colorFactor, color.g() * colorFactor, color.b() * colorFactor));
+          gr.fillRect(j * swatchSize, i * swatchSize, swatchSize, swatchSize);
         }
       }
     }
 
-    dosGraphics.repaint();
-    cColorLabel.setBackground(new Color(dosGraphics.getPalette()[colorIndex]));
-    updateSpinners();
   }
 
-  public void updateSpinners() {
 
-    // update spinners
-    redNumber.setValue(this.dosGraphics.getRgbPalette()[colorIndex][0]);
-    greenNumber.setValue(this.dosGraphics.getRgbPalette()[colorIndex][1]);
-    blueNumber.setValue(this.dosGraphics.getRgbPalette()[colorIndex][2]);
-
+  public static BufferedImage imageForPalette(int length, int cols, int swatchSize) {
+    int rows = length / cols;
+    return new BufferedImage(cols * swatchSize, rows * swatchSize, BufferedImage.TYPE_INT_RGB);
   }
-
-  public DosGraphics getDosGraphics() {
-    return this.dosGraphics;
-  }
-
-  public void paint(Graphics graphics) {
-    super.paint(graphics);
-    this.refreshPalette();
-
-    Graphics gr = this.dosGraphics.getBuffer().getGraphics();
-    gr.setColor(new Color(this.dosGraphics.getPalette()[255]));
-    gr.drawRect((colorIndex % 16) * 16,
-        (int) (colorIndex / 16) * 16, 16, 16);
-
-  }
-
-  public int getColorIndex() {
-    return colorIndex;
-  }
-
-  public void setColorIndex(int colorIndex) {
-    this.colorIndex = colorIndex;
-  }
-
 
 }
+
+
+

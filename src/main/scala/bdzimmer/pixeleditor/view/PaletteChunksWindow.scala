@@ -9,20 +9,13 @@ import java.awt.{GridLayout, BorderLayout, Dimension}
 import javax.swing.{JButton, JPanel, JOptionPane, JToolBar, WindowConstants}
 
 import bdzimmer.pixeleditor.model.TileCollectionModel._
-import bdzimmer.pixeleditor.model.ColorTriple
-
-
-// eventually this will go in a more general place
-trait WidgetUpdater {
-  val widget: ImageWidget
-  def update(): Unit
-}
+import bdzimmer.pixeleditor.model.Color
 
 
 
 class PaletteChunksWindow(
     title: String,
-    val chunks: Buffer[Named[Array[ColorTriple]]],
+    val chunks: Buffer[Named[Array[Color]]],
     settings: Settings) extends CommonWindow {
 
   setTitle(title)
@@ -31,7 +24,7 @@ class PaletteChunksWindow(
   val updaters = chunks.map(chunk => new PaletteChunkUpdater(chunk, settings.bitsPerChannel, settings.viewPaletteCols))
   val widgets = updaters.map(_.widget)
 
-  val scrollPane = new WidgetScroller(widgets)
+  val scrollPane = new WidgetScroller(widgets, selectable = true)
 
   build(WindowConstants.HIDE_ON_CLOSE)
 
@@ -40,7 +33,7 @@ class PaletteChunksWindow(
 
   /////////////////////////////////////////
 
-  def add(chunk: Named[Array[ColorTriple]]): Unit = {
+  def add(chunk: Named[Array[Color]]): Unit = {
     val updater = new PaletteChunkUpdater(chunk, settings.bitsPerChannel, settings.viewPaletteCols)
     val widget = updater.widget
     chunks   += chunk
@@ -49,7 +42,7 @@ class PaletteChunksWindow(
   }
 
 
-  def update(idx: Int, chunk: Named[Array[ColorTriple]]): Unit = {
+  def update(idx: Int, chunk: Named[Array[Color]]): Unit = {
     val updater = new PaletteChunkUpdater(chunk, settings.bitsPerChannel, settings.viewPaletteCols)
     updater.widget.setSelected(widgets(idx).getSelected)
     updater.update()
@@ -68,7 +61,7 @@ class PaletteChunksWindow(
 
   //////////////////////////////////////////
 
-  override def panel(): JPanel = {
+  override def buildPanel(): JPanel = {
     val panel = new JPanel()
     panel.setLayout(new BorderLayout())
     panel.add(scrollPane, BorderLayout.CENTER)
@@ -77,7 +70,7 @@ class PaletteChunksWindow(
   }
 
 
-  override def toolBar(): JToolBar = {
+  override def buildToolBar(): JToolBar = {
 
     val mainToolbar = new JToolBar()
 
@@ -85,9 +78,9 @@ class PaletteChunksWindow(
     edit.addActionListener(new ActionListener() {
       def actionPerformed(event: ActionEvent): Unit = {
         val idx = scrollPane.getSelectedIdx
-        if (idx < widgets.length) {
+        if (idx >= 0 && idx < widgets.length) {
           val chunk = chunks(idx)
-          val editor = new PaletteEditorNew(chunk.name, chunk.value, 6, updaters(idx))
+          val editor = new PaletteWindow(chunk.name, chunk.value, settings.bitsPerChannel, updaters(idx))
           editor.setLocationRelativeTo(null)
           editor.setVisible(true)
         }
@@ -100,7 +93,7 @@ class PaletteChunksWindow(
     rename.addActionListener(new ActionListener() {
       def actionPerformed(event: ActionEvent): Unit = {
         val idx = scrollPane.getSelectedIdx
-        if (idx < widgets.length) {
+        if (idx >= 0 && idx < widgets.length) {
           val chunk = chunks(idx)
           val newName = JOptionPane.showInputDialog(null, "Enter a new name:", chunk.name)
           if (newName != null && newName.length > 0) {
@@ -127,10 +120,10 @@ class PaletteChunksWindow(
   // that can be efficiently updated by the palette editor
 
   class PaletteChunkUpdater(
-      chunk: Named[Array[ColorTriple]], bitsPerChannel: Int, cols: Int) extends WidgetUpdater {
+      chunk: Named[Array[Color]], bitsPerChannel: Int, cols: Int) extends WidgetUpdater {
 
     val rows = (chunk.value.length + cols - 1) / cols
-    val image = PaletteEditorNew.imageForPalette(
+    val image = PaletteWindow.imageForPalette(
         chunk.value.length, cols, PaletteChunksWindow.SwatchSize)
 
     draw()
@@ -140,7 +133,7 @@ class PaletteChunksWindow(
 
     def draw(): Unit = {
       println("PaletteChunkUpdater draw " + chunk.name)
-      PaletteEditorNew.drawPalette(
+      PaletteWindow.drawPalette(
           image, chunk.value, bitsPerChannel, rows, cols, PaletteChunksWindow.SwatchSize)
     }
 

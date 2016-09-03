@@ -8,6 +8,7 @@ import java.awt.event.{ActionListener, ActionEvent, FocusAdapter, FocusEvent}
 import javax.swing.{JButton, JMenuBar, JMenu, JMenuItem, JPanel, WindowConstants}
 
 import bdzimmer.pixeleditor.model.TileCollectionModel._
+import bdzimmer.pixeleditor.model.{Color, TileContainer}
 
 class TileCollectionWindow(
     var titleString: String,
@@ -15,6 +16,13 @@ class TileCollectionWindow(
     var filename: String) extends CommonWindow {
 
   updateTitle()
+
+  val tileContainer = new TileContainer
+
+  // initialize global palette window
+  val globalPalette = (0 until tileCollection.settings.paletteSize).map(x => Color(0, 0, 0)).toArray
+  val globalPaletteWindow = new PaletteWindow(
+      "Global Palette", globalPalette, tileCollection.settings.bitsPerChannel, null)
 
   // initialize Palette Chunks window
 
@@ -26,7 +34,8 @@ class TileCollectionWindow(
 
   // initialize Pixels window
 
-  var pixelsWindow = new PixelsWindow("Pixels", tileCollection.pixels, tileCollection.settings)
+  var pixelsWindow = new PixelsWindow(
+      "Pixels", tileCollection.pixels, tileCollection.settings, globalPaletteWindow, tileContainer)
   pixelsWindow.setLocationRelativeTo(null)
 
   ////
@@ -47,7 +56,7 @@ class TileCollectionWindow(
   /////
 
 
-  override def menuBar(): JMenuBar = {
+  override def buildMenuBar(): JMenuBar = {
 
     val mainMenu = new JMenuBar()
     val fileMenu = new JMenu("File")
@@ -91,8 +100,17 @@ class TileCollectionWindow(
   }
 
 
-  override def panel(): JPanel = {
+  override def buildPanel(): JPanel = {
     val panel = new JPanel()
+    val globalPaletteButton = new JButton("Global Palette")
+    globalPaletteButton.addActionListener(new ActionListener() {
+      def actionPerformed(ae: ActionEvent): Unit = {
+        val isVisible = globalPaletteWindow.isVisible
+        globalPaletteWindow.setVisible(!isVisible)
+      }
+    })
+    panel.add(globalPaletteButton)
+
     val paletteChunksButton = new JButton("Palette Chunks")
     paletteChunksButton.addActionListener(new ActionListener() {
       def actionPerformed(ae: ActionEvent): Unit = {
@@ -100,6 +118,7 @@ class TileCollectionWindow(
         paletteChunksWindow.setVisible(!isVisible)
       }
     })
+
     panel.add(paletteChunksButton)
     val pixelsButton = new JButton("Pixels")
     pixelsButton.addActionListener(new ActionListener() {
@@ -109,6 +128,7 @@ class TileCollectionWindow(
       }
     })
     panel.add(pixelsButton)
+
     panel
   }
 

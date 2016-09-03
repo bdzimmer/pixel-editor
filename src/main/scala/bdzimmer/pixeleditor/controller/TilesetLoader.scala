@@ -24,7 +24,6 @@ trait TilesetLoader {
 
 class OldTilesetLoader(val filename: String, attrs: TileAttributes) extends TilesetLoader {
 
-  // copied code from the Java Tiles class in here and refactored
   def load(): Tileset = {
 
     // probably need to put all of this in a Try
@@ -36,7 +35,8 @@ class OldTilesetLoader(val filename: String, attrs: TileAttributes) extends Tile
     // load the palette
     val palette = Palette(
         attrs.palStart, attrs.palEnd,
-        (attrs.palStart to attrs.palEnd).map(x => OldTilesetLoader.loadColor(is)).toArray)
+        (attrs.palStart to attrs.palEnd).map(x => OldTilesetLoader.loadColor(is)).toArray,
+        6)
 
     // load tile properties
     val properties = if (attrs.tileProperties) {
@@ -72,7 +72,7 @@ object OldTilesetLoader {
     val tile = Tileset.emptyTile(width, height)
     for (y <- 0 until height) {
       for (x <- 0 until width) {
-        tile.pixels(y)(x) = is.readQbUnsignedByte()
+        tile.bitmap(y)(x) = is.readQbUnsignedByte()
       }
     }
     tile
@@ -98,7 +98,7 @@ object OldTilesetLoader {
 
   // save an m x n tile
   def saveTile(os: QbOutputStream, tile: Tile): Unit = {
-    for (row <- tile.pixels) {
+    for (row <- tile.bitmap) {
       for (pixel <- row) {
         os.writeQbUnsignedByte(pixel)
       }
@@ -130,7 +130,8 @@ object OldTilesetLoader {
     // empty palette
     val palette = Palette(
         attrs.palStart, attrs.palEnd,
-        (attrs.palStart to attrs.palEnd).map(x => Color(0, 0, 0)).toArray)
+        (attrs.palStart to attrs.palEnd).map(x => Color(0, 0, 0)).toArray,
+        6)
 
     // empty tile properties
     val properties = if (attrs.tileProperties) {

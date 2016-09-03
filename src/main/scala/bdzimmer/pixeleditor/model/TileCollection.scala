@@ -11,7 +11,7 @@ import java.awt.Image
 
 import bdzimmer.pixeleditor.view.PaletteChunksWindow
 
-case class ColorTriple(val r: Int, val g: Int, val b: Int)
+case class Color(val r: Int, val g: Int, val b: Int)
 
 
 object TileCollectionModel {
@@ -20,7 +20,7 @@ object TileCollectionModel {
     settings: Settings,
     pixels: Pixels,
     vmaps: Buffer[Named[VMap]],
-    paletteChunks: Buffer[Named[Array[ColorTriple]]]
+    paletteChunks: Buffer[Named[Array[Color]]]
   )
 
   case class Settings(
@@ -56,7 +56,7 @@ object TileCollectionModel {
 
 
   case class PaletteConf(
-    chunks: Buffer[(Int, Buffer[ColorTriple])]
+    chunks: Buffer[(Int, Buffer[Color])]
   )
 
   case class Named[T](name: String, value: T)
@@ -82,7 +82,7 @@ object Experiment {
         viewPaletteCols = 16,
         viewTileCols    = 16)
 
-    val pal = (0 until 32).map(_ => ColorTriple(0, 0, 0)).toArray
+    val pal = (0 until 32).map(_ => Color(0, 0, 0)).toArray
     val names = List("Cave Floor", "Cave Walls", "Baloney", "Cheese", "Snowstorm")
     val chunks = names.map(name => Named(name, pal.clone())).toBuffer
 

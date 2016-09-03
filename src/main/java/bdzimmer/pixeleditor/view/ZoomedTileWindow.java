@@ -1,12 +1,10 @@
 // Copyright (c) 2015 Ben Zimmer. All rights reserved.
 
-//Class for drawing a tile or sprite zoomed.
+// Class for drawing and editing a tile or sprite zoomed.
+
+// TODO: default not visible
 
 package bdzimmer.pixeleditor.view;
-
-import bdzimmer.pixeleditor.controller.FloodFill;
-import bdzimmer.pixeleditor.model.DosGraphics;
-import bdzimmer.pixeleditor.model.TileProperties;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
@@ -27,6 +25,10 @@ import javax.swing.JToggleButton;
 import javax.swing.JToolBar;
 
 
+import bdzimmer.pixeleditor.controller.FloodFill;
+import bdzimmer.pixeleditor.model.IndexedGraphics;
+import bdzimmer.pixeleditor.model.TileProperties;
+
 public class ZoomedTileWindow extends JFrame {
 
   private static final long serialVersionUID = 1L;
@@ -41,12 +43,13 @@ public class ZoomedTileWindow extends JFrame {
   private boolean showGridlines;
 
   private PaletteWindow paletteWindow;
+  private Updater updater;
 
-  private DosGraphics dosGraphics;
-  private DosGraphics tileTile;
+  private IndexedGraphics dosGraphics;
+  private IndexedGraphics tileTile;
   private JPanel graphicsPanel = new JPanel();
 
-  private TilesEditorWindow tileWindow;
+  // private TilesEditorWindow tileWindow;
   private JButton tpTop;
   private JButton tpBottom;
   private JButton tpLeft;
@@ -66,11 +69,13 @@ public class ZoomedTileWindow extends JFrame {
   public ZoomedTileWindow(
       String title,
       int[][] tile,
-      PaletteWindow paletteWindow) {
+      PaletteWindow paletteWindow,
+      Updater updater) {
 
     this.zoomFactor = 8;
 
     this.paletteWindow = paletteWindow;
+    this.updater = updater;
     this.tile = tile;
 
     if (tile != null) {
@@ -83,8 +88,8 @@ public class ZoomedTileWindow extends JFrame {
 
     dosGraphics = createDosGraphics();
 
-    tileTile = new DosGraphics(tileHeight * 3, tileWidth * 3, 2);
-    tileTile.setRgbPalette(paletteWindow.getDosGraphics().getRgbPalette());
+    tileTile = new IndexedGraphics(tileHeight * 3, tileWidth * 3, 2);
+    tileTile.setPalette(paletteWindow.getPalette());
 
     this.setLayout(new BorderLayout(0, 0));
 
@@ -104,7 +109,10 @@ public class ZoomedTileWindow extends JFrame {
       public void mousePressed(MouseEvent event) { handleClicks(event, 3); }
 
       // Only repaint the tileWindow when the mouse is released
-      public void mouseReleased(MouseEvent event) { tileWindow.repaint(); }
+      public void mouseReleased(MouseEvent event) {
+        // tileWindow.repaint();
+        ZoomedTileWindow.this.updater.update();
+      }
     });
 
     JPanel layoutPanel = new JPanel();
@@ -229,6 +237,7 @@ public class ZoomedTileWindow extends JFrame {
 
     this.add(layoutPanel, BorderLayout.SOUTH);
 
+    /*
     tpBottom.addActionListener(new ActionListener() {
       public void actionPerformed(ActionEvent event) { xorProperyBits(1); }
     });
@@ -257,6 +266,7 @@ public class ZoomedTileWindow extends JFrame {
     tpRightStair.addActionListener(new ActionListener() {
       public void actionPerformed(ActionEvent event) { xorProperyBits(64); }
     });
+    */
 
     zoomIn.addActionListener(new ActionListener() { // Anonymous Listener.
       public void actionPerformed(ActionEvent event) {
@@ -318,7 +328,7 @@ public class ZoomedTileWindow extends JFrame {
     } else if ("Fill".equals(commandString)) {
       for (int i = 0; i < tile.length; i++) {
         for (int j = 0; j < tile[0].length; j++) {
-          tile[i][j] = paletteWindow.getColorIndex();
+          tile[i][j] = paletteWindow.getSelectedIdx();
         }
       }
 
@@ -359,11 +369,12 @@ public class ZoomedTileWindow extends JFrame {
       }
     }
 
-    this.repaint();
-    this.tileWindow.repaint();
+    repaint();
+    // this.tileWindow.repaint();
+    updater.update();
   }
 
-
+  /*
   private void xorProperyBits(int bits) {
     if (tileWindow.getTileSet().properties().length > 0) {
       int prop = tileWindow.getTileSet().properties()[currentTile].value();
@@ -374,6 +385,7 @@ public class ZoomedTileWindow extends JFrame {
       System.out.println("no tile properties!");
     }
   }
+  */
 
 
   private int[][] copyTile() {
@@ -398,18 +410,18 @@ public class ZoomedTileWindow extends JFrame {
       if (tud < this.tile.length && tlr < this.tile[0].length) {
         if (!event.isMetaDown()) { // right click
           if (this.penMode == 0) { // normal pen
-            this.tile[tud][tlr] = paletteWindow.getColorIndex();
-            System.out.println("Set color " + paletteWindow.getColorIndex());
+            this.tile[tud][tlr] = paletteWindow.getSelectedIdx();
+            System.out.println("Set color " + paletteWindow.getSelectedIdx());
           } else if (this.penMode == 1) {
             this.tile[tud][tlr] = this.overlayTile[tud][tlr];
           } else if (this.penMode == 2) {
-            FloodFill.floodFill(this.tile, paletteWindow.getColorIndex(), tud, tlr);
+            FloodFill.floodFill(this.tile, paletteWindow.getSelectedIdx(), tud, tlr);
           }
         } else {
-          paletteWindow.setColorIndex(tile[tud][tlr]);
+          paletteWindow.setSelectedIdx(tile[tud][tlr]);
           paletteWindow.repaint();
           paletteWindow.toFront();
-          System.out.println("Got color " + paletteWindow.getColorIndex());
+          System.out.println("Got color " + paletteWindow.getSelectedIdx());
         }
       }
       // Only repaint the tileWindow when the mouse is released
@@ -469,9 +481,11 @@ public class ZoomedTileWindow extends JFrame {
     return tile;
   }
 
+  /*
   public void setTileWindow(TilesEditorWindow tileWindow) {
     this.tileWindow = tileWindow;
   }
+  */
 
   public int getZoomFactor() {
     return zoomFactor;
@@ -482,7 +496,7 @@ public class ZoomedTileWindow extends JFrame {
     updateGraphics();
   }
 
-  public DosGraphics getDosGraphics() {
+  public IndexedGraphics getDosGraphics() {
     return dosGraphics;
   }
 
@@ -498,14 +512,15 @@ public class ZoomedTileWindow extends JFrame {
     repaint();
   }
 
-  private DosGraphics createDosGraphics() {
-    DosGraphics dg = new DosGraphics(tileHeight * zoomFactor, tileWidth * zoomFactor, 2);
-    dg.setRgbPalette(paletteWindow.getDosGraphics().getRgbPalette());
+  private IndexedGraphics createDosGraphics() {
+    IndexedGraphics dg = new IndexedGraphics(tileHeight * zoomFactor, tileWidth * zoomFactor, 2);
+    dg.setPalette(paletteWindow.getPalette());
     dg.setGridDimensions(zoomFactor, zoomFactor);
     dg.setShowGrid(showGridlines);
     return dg;
   }
 
+  /*
   private void updateTileProps() {
     int tpb = 0;
     if (this.tileWindow.getTileSet().properties().length > 0) {
@@ -553,6 +568,7 @@ public class ZoomedTileWindow extends JFrame {
 
   }
 
+   */
 
   /**
    * Draw the component.
@@ -575,7 +591,7 @@ public class ZoomedTileWindow extends JFrame {
     tileTile.repaint();
 
     // draw the tileprops.
-    this.updateTileProps();
+    // this.updateTileProps();
   }
 
 }

@@ -19,9 +19,9 @@ public abstract class CommonWindow extends JFrame {
 
   private static final long serialVersionUID = 0;
 
-  protected JMenuBar menuBar;
-  protected JToolBar toolBar;
-  protected JPanel panel;
+  protected JMenuBar  menuBar;
+  protected JToolBar  toolBar;
+  protected JPanel    panel;
   protected StatusBar statusBar;
 
 
@@ -29,10 +29,10 @@ public abstract class CommonWindow extends JFrame {
   // usually you want to set the defaultCloseOperation to JFrame.DISPOSE_ON_CLOSE
   protected void build(int defaultCloseOperation) {
 
-    this.menuBar   = menuBar();
-    this.toolBar   = toolBar();
-    this.panel     = panel();
-    this.statusBar = statusBar();
+    this.menuBar   = buildMenuBar();
+    this.toolBar   = buildToolBar();
+    this.panel     = buildPanel();
+    this.statusBar = buildStatusBar();
 
     if (this.menuBar != null) {
       setJMenuBar(this.menuBar);
@@ -51,7 +51,7 @@ public abstract class CommonWindow extends JFrame {
     }
 
     setDefaultCloseOperation(defaultCloseOperation);
-    
+
     addWindowFocusListener(new WindowAdapter() {
       public void windowGainedFocus(WindowEvent event) {
 	    onFocus();
@@ -69,17 +69,17 @@ public abstract class CommonWindow extends JFrame {
   }
 
 
-  protected JMenuBar menuBar() {return null;};
+  protected JMenuBar buildMenuBar() {return null;};
 
-  protected JToolBar toolBar() {return null;};
+  protected JToolBar buildToolBar() {return null;};
 
-  protected JPanel panel() {return null;};
+  protected JPanel buildPanel() {return null;};
 
-  protected StatusBar statusBar() {return null;};
-  
+  protected StatusBar buildStatusBar() {return null;};
+
   protected void onFocus() {
-	System.out.println("focus gained");
-	repaint();
+    System.out.println("focus gained");
+    repaint();
   }
 
 

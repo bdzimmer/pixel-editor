@@ -14,14 +14,11 @@ import java.io.{File, FileInputStream, FileOutputStream}
 
 case class TileProperties(value: Int)    // for now
 
-case class Tile(pixels: Array[Array[Int]])
+case class Tile(bitmap: Array[Array[Int]])
 
-// color with red, green, and blue elements that range 0-63
-case class Color(val r: Int, val g: Int, val b: Int) {
-  def toInt(): Int = 255 << 24 | (r * 4) << 16 | (g * 4) << 8 | (b * 4)
-}
+case class Palette(start: Int, end: Int, colors: Array[Color], bitsPerChannel: Int) {
 
-case class Palette(start: Int, end: Int, colors: Array[Color]) {
+  val colorFactor = (1 << (8 - bitsPerChannel))
 
   def colorModel(transparent: Color): IndexColorModel = {
 
@@ -30,20 +27,24 @@ case class Palette(start: Int, end: Int, colors: Array[Color]) {
     val b = new Array[Byte](256)
 
     for (i <- 0 until colors.length) {
-      r(i + start) = ((colors(i).r * 4) & 0xFF).toByte
-      g(i + start) = ((colors(i).g * 4) & 0xFF).toByte
-      b(i + start) = ((colors(i).b * 4) & 0xFF).toByte
+      r(i + start) = ((colors(i).r * colorFactor) & 0xFF).toByte
+      g(i + start) = ((colors(i).g * colorFactor) & 0xFF).toByte
+      b(i + start) = ((colors(i).b * colorFactor) & 0xFF).toByte
     }
 
-    r(255) = ((transparent.r * 4) & 0xFF).toByte
-    g(255) = ((transparent.g * 4) & 0xFF).toByte
-    b(255) = ((transparent.b * 4) & 0xFF).toByte
+    r(255) = ((transparent.r * colorFactor) & 0xFF).toByte
+    g(255) = ((transparent.g * colorFactor) & 0xFF).toByte
+    b(255) = ((transparent.b * colorFactor) & 0xFF).toByte
 
     // weird things happen when you try to set a transparent index (extra argument)
     // it seems that it will always be index 0 in a png, but also strange palette
     // shifts happen if it is set to 256. Seems best to not set this for now.
     new IndexColorModel(8, 256, r, g, b);
 
+  }
+
+  def colorInt(color: Color): Int = {
+    255 << 24 | (color.r * colorFactor) << 16 | (color.g * colorFactor) << 8 | (color.b * colorFactor)
   }
 
 }
@@ -60,8 +61,8 @@ class Tileset (
   // We want to be able to assume that the tiles are all the same size
   // and probably that the palettes are also the same size.
 
-  val height = tiles(0).pixels.size
-  val width = tiles(0).pixels(0).size
+  val height = tiles(0).bitmap.size
+  val width = tiles(0).bitmap(0).size
 
 
   def imageRGB(paletteIndex: Int, transparent: Color = Tileset.Transparent): BufferedImage = {
@@ -99,8 +100,8 @@ class Tileset (
 
       for (y <- 0 until height) {
         for (x <- 0 until width) {
-          val color = fullPal(tiles(whichTile).pixels(y)(x))
-          tilesImage.setRGB(xoff + x, yoff + y, color.toInt)
+          val color = fullPal(tiles(whichTile).bitmap(y)(x))
+          tilesImage.setRGB(xoff + x, yoff + y, curPal.colorInt(color))
         }
       }
     }
@@ -128,7 +129,7 @@ class Tileset (
       val xoff = (whichTile % tilesWide) * width
       val yoff = (whichTile / tilesWide) * height
       for (y <- 0 until height) {
-        wr.setPixels(xoff, yoff + y, width, 1, tiles(whichTile).pixels(y))
+        wr.setPixels(xoff, yoff + y, width, 1, tiles(whichTile).bitmap(y))
       }
     }
 
@@ -166,22 +167,18 @@ object Tileset {
   }
 
 
-  // modify an int[][] with a Palette object
-  def modPalette(pal: Palette, fulPal: Array[Array[Int]]): Unit = {
+  // modify an color triple array with a Palette object
+  def modPalette(pal: Palette, fulPal: Array[Color]): Unit = {
     (pal.start to pal.end).foreach(i => {
       val color = pal.colors(i - pal.start)
-      fulPal(i)(0) = color.r
-      fulPal(i)(1) = color.g
-      fulPal(i)(2) = color.b
+      fulPal(i) = Color(color.r, color.g, color.b)
     })
   }
 
 
-  // extract a new Palette object fom an int[][]
-  def extractPalette(pal: Palette, fulPal: Array[Array[Int]]): Palette = {
-     pal.copy(colors = (pal.start to pal.end).map(i => {
-       new Color(fulPal(i)(0), fulPal(i)(1), fulPal(i)(2))
-     }).toArray)
+  // extract a new Palette object from an array of color triples
+  def extractPalette(pal: Palette, fulPal: Array[Color]): Palette = {
+     pal.copy(colors = (pal.start to pal.end).map(i => fulPal(i)).toArray)
   }
 
 }
