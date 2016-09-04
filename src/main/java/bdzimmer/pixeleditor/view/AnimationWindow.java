@@ -25,6 +25,7 @@ import bdzimmer.pixeleditor.model.Direction;
 import bdzimmer.pixeleditor.model.IndexedGraphics;
 import bdzimmer.pixeleditor.model.TileContainer;
 import bdzimmer.pixeleditor.view.DragDrop.TileImportTransferHandler;
+import bdzimmer.pixeleditor.controller.TileUtil;
 
 
 public class AnimationWindow extends CommonWindow {
@@ -129,15 +130,20 @@ public class AnimationWindow extends CommonWindow {
 
     for (int i = 0; i < bgTilesHigh; i++) {
       for (int j = 0; j < bgTilesWide; j++) {
-        dosGraphics.drawTile(
-            tc.getTileBitmap(),
-            i * tc.getTileBitmap().length - bgOffsetY,
-            j * tc.getTileBitmap()[0].length - bgOffsetX);
-
+    	TileUtil.drawTile(
+			dosGraphics, 
+			tc.getTileBitmap(),
+			j * tc.getTileBitmap()[0].length - bgOffsetX,
+			i * tc.getTileBitmap().length    - bgOffsetY);
       }
     }
 
-    dosGraphics.drawTileTrans(parent.getTileSet().tiles()[tileIndex].bitmap(), borderY, borderX);
+    TileUtil.drawTileTrans(
+    	dosGraphics,
+    	parent.getTileSet().tiles()[tileIndex].bitmap(),
+    	borderX,
+    	borderY);
+    
     dosGraphics.repaint();
   }
 

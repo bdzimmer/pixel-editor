@@ -11,6 +11,7 @@ import java.awt.image.IndexColorModel;
 import javax.swing.JPanel;
 
 import bdzimmer.pixeleditor.model.Color;
+import bdzimmer.pixeleditor.controller.TileUtil;
 
 public class IndexedGraphics extends JPanel {
   private static final long serialVersionUID = 1; // Meaningless junk.
@@ -58,6 +59,7 @@ public class IndexedGraphics extends JPanel {
 
     this.palette = palette;
     this.palettePacked = new int[palette.length];
+    this.updateClut();
 
     screenBuffer = new BufferedImage(
         this.width * this.scale, this.height * this.scale, BufferedImage.TYPE_INT_RGB);
@@ -78,78 +80,20 @@ public class IndexedGraphics extends JPanel {
 
   public IndexedGraphics(int height, int width, int scale) {
     // default to old VGA settings
-    this(new Color[256], 6, height, width, scale);
+    this(TileUtil.colorArray(256), 6, height, width, scale);
   }
 
 
+  ///////////////////////////////////////////////////////////////////////////////////////////////////////
+  
+  
   // functions for drawing tiles and tilesets
 
   // all of this needs to be moved to tileutil
 
-  /**
-   * Draw a tile without transparency.
-   *
-   * @param tile  2d int array of tile
-   * @param y    vertical position to draw at
-   * @param x    horizontal position to draw at
-   */
-  public void drawTile(int[][] tile, int y, int x) {
-    if (tile != null) {
-      // Draw tile to screen.
-      for (int i = 0; i < tile.length; i++) {
-        for (int j = 0; j < tile[0].length; j++) {
-          setPixel(y + i, x + j, tile[i][j]);
-        }
-      }
-    }
-  }
-
-  /**
-   * Draw a tile with transparency.
-   *
-   * @param tile  2d int array of tile
-   * @param y    vertical position to draw at
-   * @param x    horizontal position to draw at
-   */
-  public void drawTileTrans(int[][] tile, int y, int x) {
-    if (tile != null) {
-      // Draw tile to screen.
-      for (int i = 0; i < tile.length; i++) {
-        for (int j = 0; j < tile[0].length; j++) {
-          int curColor = tile[i][j];
-          if (curColor != 255) {
-            setPixel(y + i, x + j, curColor);
-          }
-        }
-      }
-
-    }
-  }
-
-
-  /**
-   * Draw a tileset.
-   * @param tileset    Tiles to draw
-   */
-  public void drawTileset(Tileset tileset) {
-    if (tileset.tiles() != null) {
-      drawTileset(tileset.tiles(), tileset.width(), tileset.height(), tileset.tilesPerRow());
-    }
-  }
-
-
-  public void drawTileset(Tile[] tiles, int tileWidth, int tileHeight, int tilesPerRow) {
-    int numRows = (int)Math.ceil((float)tiles.length / tilesPerRow);
-    for (int i = 0; i < numRows; i++) {
-      for (int j = 0; j < tilesPerRow; j++) {
-        int curTile = i * tilesPerRow + j;
-        if (curTile < tiles.length) {
-          drawTile(tiles[curTile].bitmap(), i * tileWidth, j * tileHeight);
-        }
-      }
-    }
-  }
-
+  
+  ///////////////////////////////////////////////////////////////////////////////
+  
 
   /**
    * Set a pixel at a given location.
@@ -202,8 +146,9 @@ public class IndexedGraphics extends JPanel {
       }
     }
   }
+  
 
-  public BufferedImage getBuffer() {
+  public BufferedImage getImage() {
     return this.screenBuffer;
   }
 

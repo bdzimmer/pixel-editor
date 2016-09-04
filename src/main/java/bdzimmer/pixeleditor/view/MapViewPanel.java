@@ -9,6 +9,7 @@ import bdzimmer.pixeleditor.model.IndexedGraphics;
 import bdzimmer.pixeleditor.model.Map;
 import bdzimmer.pixeleditor.model.Tileset;
 import bdzimmer.pixeleditor.model.Color;
+import bdzimmer.pixeleditor.controller.TileUtil;
 
 import java.awt.BorderLayout;
 import java.awt.Graphics;
@@ -100,9 +101,11 @@ public class MapViewPanel extends JPanel {
             } else {
               curTile = 0;
             }
-            this.dosGraphics.drawTile(
+            TileUtil.drawTile(
+            	dosGraphics,
                 tileset.tiles()[curTile].bitmap(),
-                i* tileset.height(), j * tileset.width());
+                j * tileset.width(),
+                i * tileset.height());
 
           }
         }
@@ -119,13 +122,17 @@ public class MapViewPanel extends JPanel {
               } else {
                 curTile = 0;
               }
-              this.dosGraphics.drawTile(
+              TileUtil.drawTile(
+            	  dosGraphics,
                   tileset.tiles()[curTile].bitmap(),
-                  i * this.tileset.height(), j * tileset.width());
+                  j * tileset.width(),
+                  i * tileset.height());
             } else {
-              this.dosGraphics.drawTile(
+              TileUtil.drawTile(
+                  dosGraphics,
                   new int[tileset.height()][tileset.width()],
-                  i * tileset.height(), j * tileset.width());
+                  j * tileset.width(),
+                  i * tileset.height());
             }
           }
         }
@@ -141,10 +148,11 @@ public class MapViewPanel extends JPanel {
                 curTile = 0;
               }
               if (curTile > 0) {
-                this.dosGraphics.drawTileTrans(
+                TileUtil.drawTileTrans(
+                    dosGraphics,
                     tileset.tiles()[curTile].bitmap(),
-                    i * tileset.height(),
-                    j * tileset.width());
+                    j * tileset.width(),
+                    i * tileset.height());
               }
             }
           }
@@ -169,7 +177,7 @@ public class MapViewPanel extends JPanel {
     dosGraphics.updateClut();
     // System.out.println("updated clut");
     dosGraphics.repaint();
-    Graphics dgGraphics = dosGraphics.getBuffer().getGraphics();
+    Graphics dgGraphics = dosGraphics.getImage().getGraphics();
 
     // Bounds drawing
     if (this.dispBounds && this.tileset != null) {

@@ -28,6 +28,8 @@ class PixelsWindow(
   var drawGrid = false
   var drawTileNumbers = false
 
+  var curPalOffset = 0
+
   val rows = (pixels.tiles.length + settings.viewTileCols - 1) / settings.viewTileCols - 1;
 
   val updater = new TilesUpdater(pixels.tiles, settings)
@@ -40,8 +42,9 @@ class PixelsWindow(
   })
 
   val zoomWindow = new ZoomedTileWindow(
-          "Zoom", tileContainer.getTileBitmap,
-          paletteWindow, updater)
+      "Zoom",
+      tileContainer.getTileBitmap, new SimpleContainer(0), settings.colorsPerTile,
+      paletteWindow, updater)
   zoomWindow.setLocationRelativeTo(this)
   zoomWindow.setDefaultCloseOperation(WindowConstants.HIDE_ON_CLOSE)
   zoomWindow.setVisible(false)
@@ -61,27 +64,27 @@ class PixelsWindow(
 
   def handleClicks(event: MouseEvent, allowCopy: Boolean) {
 
-    val selectedTileAny =
+    val selectedIdxAny =
         (event.getY() / (settings.tileHeight * PixelsWindow.Scale)) * settings.viewTileCols +
         (event.getX() / (settings.tileWidth * PixelsWindow.Scale))
 
 
-    val selectedTile = if (selectedTileAny >= pixels.tiles.length) {
+    val selectedIdx = if (selectedIdxAny >= pixels.tiles.length) {
       pixels.tiles.length - 1;
     } else {
-      selectedTileAny
+      selectedIdxAny
     }
 
 
-    println("selected tile: " + selectedTile)
+    println("selected tile index: " + selectedIdx)
 
     if (event.isMetaDown()) {
       // right click grab tile
-      selectTile(selectedTile)
+      selectTile(selectedIdx)
 
     } else  if (allowCopy) {
 
-      val newTile = selectedTile;
+      val newTile = selectedIdx;
 
       // TODO: use drag / drop functionality for this???
 
@@ -97,30 +100,36 @@ class PixelsWindow(
           pixels.tiles(newTile).bitmap(i)(j) = tileContainer.getTileBitmap()(i)(j)
         }
       }
+      pixels.defaultPalOffsets(newTile) = curPalOffset
+
 
       // set the copy as the current tile
-      tileContainer.setTileIndex(selectedTile)
-      tileContainer.setTileBitmap(pixels.tiles(selectedTile).bitmap)
+      tileContainer.setTileIndex(selectedIdx)
+      tileContainer.setTileBitmap(pixels.tiles(selectedIdx).bitmap)
       updater.update()
 
     }
 
-    statusBar.update(0, 0, "" + selectedTile);
+    statusBar.update(0, 0, "" + selectedIdx);
 
   }
 
 
   // select a tile from the set into the tile container
   // and show it in the ZoomWindow
-  def selectTile(selectedTile: Int): Unit = {
+  def selectTile(selectedIdx: Int): Unit = {
 
     // set the current tile
-    tileContainer.setTileIndex(selectedTile);
-    val bitmap = pixels.tiles(selectedTile).bitmap
+    tileContainer.setTileIndex(selectedIdx);
+    val bitmap = pixels.tiles(selectedIdx).bitmap
     tileContainer.setTileBitmap(bitmap)
+    curPalOffset = pixels.defaultPalOffsets(selectedIdx)
 
     // show in zoom window
-    zoomWindow.setTile(bitmap, selectedTile)
+    zoomWindow.setTile(
+        bitmap,
+        new ArrayContainer(pixels.defaultPalOffsets, selectedIdx),
+        settings.colorsPerTile)
     zoomWindow.toFront()
     zoomWindow.setVisible(true)
 
@@ -144,8 +153,8 @@ class PixelsWindow(
     val drawGridButton = new JToggleButton("Grid")
     drawGridButton.addChangeListener(new ChangeListener() {
       override def stateChanged(e: ChangeEvent) {
-      	println("grid show: "+ drawGridButton.isSelected)
-      	drawGrid = drawGridButton.isSelected
+        println("grid show: "+ drawGridButton.isSelected)
+        drawGrid = drawGridButton.isSelected
         updater.update
       }
     });
@@ -154,8 +163,8 @@ class PixelsWindow(
     val drawTileNumbersButton = new JToggleButton("Numbers")
     drawTileNumbersButton.addChangeListener(new ChangeListener() {
       override def stateChanged(e: ChangeEvent) {
-      	println("numbers show: "+ drawTileNumbersButton.isSelected)
-      	drawTileNumbers = drawTileNumbersButton.isSelected
+        println("numbers show: "+ drawTileNumbersButton.isSelected)
+        drawTileNumbers = drawTileNumbersButton.isSelected
         updater.update
       }
     });
@@ -191,28 +200,32 @@ class PixelsWindow(
     indexedGraphics.setGridDimensions(settings.tileHeight, settings.tileWidth)
 
     draw()
-    val widget = new ImageWidget("", indexedGraphics.getBuffer, List(), 0, 0)
+    val widget = new ImageWidget("", indexedGraphics.getImage, List(), 0, 0)
 
     def draw(): Unit = {
       println("PixelsUpdater draw")
       indexedGraphics.updateClut()
-      indexedGraphics.drawTileset(
-          pixels.tiles, settings.tileWidth, settings.tileHeight,
+      // TODO: draw using palette offsets
+      TileUtil.drawTileset(
+          indexedGraphics,
+          pixels.tiles,
+          pixels.defaultPalOffsets,
+          settings.tileWidth,
+          settings.tileHeight,
           settings.viewTileCols)
       if (drawGrid) {
         TileUtil.drawGrid(
-            indexedGraphics.getBuffer,
-            settings.tileWidth * PixelsWindow.Scale,
+            indexedGraphics.getImage,
+            settings.tileWidth  * PixelsWindow.Scale,
             settings.tileHeight * PixelsWindow.Scale)
       }
 
       if (drawTileNumbers) {
         TileUtil.drawNumbers(
-            indexedGraphics.getBuffer, pixels.tiles.size,
+            indexedGraphics.getImage, pixels.tiles.size,
             settings.viewTileCols, rows,
             settings.tileWidth * PixelsWindow.Scale,
             settings.tileHeight * PixelsWindow.Scale)
-
       }
 
     }

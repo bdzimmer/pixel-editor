@@ -10,6 +10,7 @@ import scala.collection.mutable.ArrayBuffer
 import java.awt.Image
 
 import bdzimmer.pixeleditor.view.PaletteChunksWindow
+import bdzimmer.pixeleditor.controller.TileUtil
 
 case class Color(val r: Int, val g: Int, val b: Int)
 
@@ -38,7 +39,10 @@ object TileCollectionModel {
     viewTileCols: Int
   )
 
-  case class Pixels(tiles: Array[Tile])
+  case class Pixels(
+    tiles: Array[Tile],
+    defaultPalOffsets: Array[Integer]
+  )
 
   case class VMap(
     palConfs: Buffer[PaletteConf],
@@ -48,7 +52,7 @@ object TileCollectionModel {
 
   case class VMapEntry(
     pixelsIdx: Int,
-    palIdx: Int,
+    palOffset: Int,
     flipX: Boolean,
     flipY: Boolean,
     attribs: TileProperties
@@ -82,16 +86,18 @@ object Experiment {
         viewPaletteCols = 16,
         viewTileCols    = 16)
 
+    val tilesLength = 512
+
     val pal = (0 until 32).map(_ => Color(0, 0, 0)).toArray
     val names = List("Cave Floor", "Cave Walls", "Baloney", "Cheese", "Snowstorm")
     val chunks = names.map(name => Named(name, pal.clone())).toBuffer
 
-    val tiles = (0 until 512).map(_ =>
+    val tiles = (0 until tilesLength).map(_ =>
       Tileset.emptyTile(settings.tileWidth, settings.tileHeight)).toArray
 
     val tc = TileCollection(
       settings,
-      Pixels(tiles),
+      Pixels(tiles, TileUtil.integerArray(tilesLength)),
       Buffer(),
       chunks)
 

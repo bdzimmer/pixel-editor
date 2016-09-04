@@ -5,16 +5,6 @@
 
 package bdzimmer.pixeleditor.view;
 
-import bdzimmer.pixeleditor.controller.OldTilesetLoader;
-import bdzimmer.pixeleditor.model.IndexedGraphics;
-import bdzimmer.pixeleditor.model.Palette;
-import bdzimmer.pixeleditor.model.TileContainer;
-import bdzimmer.pixeleditor.model.TileOptions;
-import bdzimmer.pixeleditor.model.Tileset;
-import bdzimmer.pixeleditor.model.TileAttributes;
-import bdzimmer.pixeleditor.model.Color;
-import bdzimmer.pixeleditor.view.DragDrop.TileExportTransferHandler;
-
 import java.awt.Graphics;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -38,6 +28,16 @@ import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
 
+import bdzimmer.pixeleditor.model.IndexedGraphics;
+import bdzimmer.pixeleditor.model.Palette;
+import bdzimmer.pixeleditor.model.TileContainer;
+import bdzimmer.pixeleditor.model.TileOptions;
+import bdzimmer.pixeleditor.model.Tileset;
+import bdzimmer.pixeleditor.model.TileAttributes;
+import bdzimmer.pixeleditor.model.Color;
+import bdzimmer.pixeleditor.view.DragDrop.TileExportTransferHandler;
+import bdzimmer.pixeleditor.controller.OldTilesetLoader;
+import bdzimmer.pixeleditor.controller.TileUtil;
 
 public class TilesEditorWindow extends CommonWindow {
 
@@ -171,28 +171,37 @@ public class TilesEditorWindow extends CommonWindow {
 
   // select a tile from the set into the tile container
   // and show it in the ZoomWindow
-  public void selectTile(int selectedTile) {
+  public void selectTile(int selectedIdx) {
 
     // set the current tile
-    tileContainer.setTileIndex(selectedTile);
-    tileContainer.setTileBitmap(tileset.tiles()[selectedTile].bitmap());
+    tileContainer.setTileIndex(selectedIdx);
+    tileContainer.setTileBitmap(tileset.tiles()[selectedIdx].bitmap());
 
     // show in zoom window
+    // TODO: why this type safety warning?
+    Container<Integer> dummyContainer = new SimpleContainer<Integer>(0);
+    
     if (zoomWindow == null || !zoomWindow.isVisible()) {
+      
       zoomWindow = new ZoomedTileWindow(
           "Zoom",
-          tileset.tiles()[selectedTile].bitmap(),
+          tileset.tiles()[selectedIdx].bitmap(),
+          dummyContainer,
+          256,
           paletteWindow,
           new DumbUpdater(this));
       zoomWindow.setLocationRelativeTo(this);
     } else {
-      zoomWindow.setTile(tileset.tiles()[selectedTile].bitmap(), selectedTile);
+      zoomWindow.setTile(
+          tileset.tiles()[selectedIdx].bitmap(),
+          dummyContainer,
+          256);
     }
     zoomWindow.toFront();
 
     // show in animation window
     if (animationWindow != null && animationWindow.isVisible()) {
-      animationWindow.setTileIndex(selectedTile);
+      animationWindow.setTileIndex(selectedIdx);
       animationWindow.toFront();
     }
 
@@ -341,7 +350,7 @@ public class TilesEditorWindow extends CommonWindow {
     super.paint(graphics);
 
     dosGraphics.updateClut();
-    dosGraphics.drawTileset(tileset);
+    TileUtil.drawTileset(dosGraphics, tileset);
     dosGraphics.repaint();
 
   }

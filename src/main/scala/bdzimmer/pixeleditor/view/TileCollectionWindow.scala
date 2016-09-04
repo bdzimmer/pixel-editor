@@ -20,7 +20,14 @@ class TileCollectionWindow(
   val tileContainer = new TileContainer
 
   // initialize global palette window
-  val globalPalette = (0 until tileCollection.settings.paletteSize).map(x => Color(0, 0, 0)).toArray
+
+  val reds =   (0 until 8).map(x => Color(x * 2, 0,     0))
+  val greens = (0 until 8).map(x => Color(0,     x * 2, 0))
+  val blues =  (0 until 8).map(x => Color(0,     0,     x * 2))
+
+  // val globalPalette = (0 until tileCollection.settings.paletteSize).map(x => Color(0, 0, 0)).toArray
+  val globalPalette = (reds ++ greens ++ blues ++ greens ++ (32 until 256).map(_ => Color(0, 0, 0))).toArray
+
   val globalPaletteWindow = new PaletteWindow(
       "Global Palette", globalPalette, tileCollection.settings.bitsPerChannel, null)
 

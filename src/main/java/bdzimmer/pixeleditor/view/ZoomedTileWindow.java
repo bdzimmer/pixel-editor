@@ -7,7 +7,6 @@
 package bdzimmer.pixeleditor.view;
 
 import java.awt.BorderLayout;
-import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.GridLayout;
@@ -27,7 +26,8 @@ import javax.swing.JToolBar;
 
 import bdzimmer.pixeleditor.controller.FloodFill;
 import bdzimmer.pixeleditor.model.IndexedGraphics;
-import bdzimmer.pixeleditor.model.TileProperties;
+// import bdzimmer.pixeleditor.model.TileProperties;
+import bdzimmer.pixeleditor.controller.TileUtil;
 
 public class ZoomedTileWindow extends JFrame {
 
@@ -37,7 +37,8 @@ public class ZoomedTileWindow extends JFrame {
   private int tileWidth;
   private int zoomFactor;
   private int[][] tile;
-  private int currentTile;
+  private Container<Integer> palOffset;
+  private int paletteSize;
   private int[][] overlayTile;
   private int penMode;
   private boolean showGridlines;
@@ -62,21 +63,22 @@ public class ZoomedTileWindow extends JFrame {
   /**
    * Create a new ZoomedTileWindow.
    *
-   * @param title         title for window
-   * @param tile          tile to display and edit
-   * @param rgbPalette    rgb palette
    */
   public ZoomedTileWindow(
       String title,
       int[][] tile,
+      Container<Integer> palOffset,
+      int paletteSize,
       PaletteWindow paletteWindow,
       Updater updater) {
 
-    this.zoomFactor = 8;
+    this.zoomFactor = 16;
 
     this.paletteWindow = paletteWindow;
     this.updater = updater;
     this.tile = tile;
+    this.palOffset = palOffset;
+    this.paletteSize = paletteSize;
 
     if (tile != null) {
       tileHeight = tile.length;
@@ -399,83 +401,67 @@ public class ZoomedTileWindow extends JFrame {
   }
 
   private void handleClicks(MouseEvent event, int whichWindow) {
-    // evidently this is more proper than a switch thingy
 
     if (whichWindow == 3) { // zoom window(
-      int tud = (int) ((event.getY() - dosGraphics.getY()) / zoomFactor / 2);
-      int tlr = (int) ((event.getX() - dosGraphics.getX()) / zoomFactor / 2);
+      int tud = (int) ((event.getY() - dosGraphics.getY()) / zoomFactor);
+      int tlr = (int) ((event.getX() - dosGraphics.getX()) / zoomFactor);
 
       // System.out.println("In ZoomWindow -- " + tud + " " + tlr);
 
       if (tud < this.tile.length && tlr < this.tile[0].length) {
         if (!event.isMetaDown()) { // right click
-          if (this.penMode == 0) { // normal pen
-            this.tile[tud][tlr] = paletteWindow.getSelectedIdx();
-            System.out.println("Set color " + paletteWindow.getSelectedIdx());
-          } else if (this.penMode == 1) {
-            this.tile[tud][tlr] = this.overlayTile[tud][tlr];
+        	
+          int colorIdx = 0; // color to set
+          if (penMode == 0 || penMode == 1) { // normal pen
+        	if (penMode == 0) {
+        		colorIdx = paletteWindow.getSelectedIdx();
+        	} else {
+        		colorIdx = overlayTile[tud][tlr];
+        	}
+        	tile[tud][tlr] = colorIdx % paletteSize;
+        	System.out.println("set color " + colorIdx);
           } else if (this.penMode == 2) {
-            FloodFill.floodFill(this.tile, paletteWindow.getSelectedIdx(), tud, tlr);
+        	colorIdx = paletteWindow.getSelectedIdx();
+            FloodFill.floodFill(this.tile, colorIdx % paletteSize, tud, tlr);
+            System.out.println("flood color " + colorIdx);
           }
+   
+          int newPalOffset = colorIdx - colorIdx % paletteSize;
+          if (newPalOffset != palOffset.get()) {
+        	  System.out.println("updating palette offset to " + newPalOffset);
+        	  palOffset.set(newPalOffset);
+        	  TileUtil.reIndex(tile, paletteSize);
+          }
+          
         } else {
-          paletteWindow.setSelectedIdx(tile[tud][tlr]);
+          paletteWindow.setSelectedIdx(palOffset.get() + tile[tud][tlr]);
           paletteWindow.repaint();
           paletteWindow.toFront();
-          System.out.println("Got color " + paletteWindow.getSelectedIdx());
+          System.out.println("got color " + paletteWindow.getSelectedIdx());
         }
       }
-      // Only repaint the tileWindow when the mouse is released
-      // this.tileWindow.repaint();
-      this.repaint();
+
+      repaint();
     }
 
   }
 
-  /**
-   * Redraw the zoomed tile.
-   */
-  public void drawTile() {
-    if (this.tile != null) {
-      for (int i = 0; i < tile.length; i++) {
-        for (int j = 0; j < tile[0].length; j++) {
-          for (int k = 0; k < zoomFactor; k++) {
-            for (int l = 0; l < zoomFactor; l++) {
-              dosGraphics.setPixel(i * zoomFactor + k, j * zoomFactor + l, tile[i][j]);
-            }
-          }
-        }
-      }
-      dosGraphics.repaint();
-    }
-  }
 
-
-  /**
-   * Set the tile to view and edit.
-   *
-   * @param tileSet       array describing tile set
-   * @param whichTile     which tile in the tile set
-   */
-  public void setTile(int[][] tile, int whichTile) {
+  public void setTile(
+      int[][] tile,
+      Container<Integer> palOffset,
+      int paletteSize) {
+	  
     this.tile = tile;
-    currentTile = whichTile;
     this.tileHeight = tile.length;
     this.tileWidth = tile[0].length;
+    this.palOffset = palOffset;
+    this.paletteSize = paletteSize;
     updateGraphics();
+    
+    System.out.println("zoomedtilewindow: set tile; palOffset: " + palOffset.get());
   }
-
-
-  /**
-   * Set the tile to view and edit.
-   *
-   * @param tempTile      array describing the tile
-   */
-  public void setTile(int[][] tempTile) {
-    tile = tempTile;
-    this.tileHeight = tile.length;
-    this.tileWidth = tile[0].length;
-    updateGraphics();
-  }
+  
 
   public int[][] getTile() {
     return tile;
@@ -508,14 +494,17 @@ public class ZoomedTileWindow extends JFrame {
     }
     dosGraphics = createDosGraphics();
     graphicsPanel.add(dosGraphics);
+    graphicsPanel.validate();
     pack();
     repaint();
   }
 
   private IndexedGraphics createDosGraphics() {
-    IndexedGraphics dg = new IndexedGraphics(tileHeight * zoomFactor, tileWidth * zoomFactor, 2);
-    dg.setPalette(paletteWindow.getPalette());
-    dg.setGridDimensions(zoomFactor, zoomFactor);
+    IndexedGraphics dg = new IndexedGraphics(
+    	paletteWindow.getPalette(),
+    	paletteWindow.getBitsPerChannel(),
+    	tileHeight, tileWidth, zoomFactor);
+    dg.setGridDimensions(1, 1);
     dg.setShowGrid(showGridlines);
     return dg;
   }
@@ -576,15 +565,21 @@ public class ZoomedTileWindow extends JFrame {
   public void paint(Graphics gr) {
     super.paint(gr);
 
+    // draw the main zoomed tile
     dosGraphics.updateClut();
-    tileTile.updateClut();
-    drawTile();
+    TileUtil.drawTile(dosGraphics, tile, 0, 0, palOffset.get());
+    dosGraphics.repaint();
 
     // Draw the repeated tile for tiling purposes
+    tileTile.updateClut();
     if (this.tileHeight == 16) {
       for (int i = 0; i < 3; i++) {
         for (int j = 0; j < 3; j++) {
-          tileTile.drawTile(this.tile, i * this.tileHeight, j * this.tileWidth);
+          TileUtil.drawTile(
+              tileTile, tile,
+              j * this.tileWidth,
+              i * this.tileHeight,
+              palOffset.get());
         }
       }
     }
