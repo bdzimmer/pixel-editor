@@ -32,7 +32,7 @@ class ImageWidget(
   setLayout(new BorderLayout())
 
   val buttonPanel = new JPanel()
-  buttonPanel.setPreferredSize(new Dimension(buttonWidth, getWidth))
+  buttonPanel.setPreferredSize(new Dimension(buttonWidth, getHeight))
   buttonPanel.setLayout(new GridLayout(buttons.length, 1, 0, 0))
   buttonPanel.setBackground(Color.black)
 

@@ -4,8 +4,11 @@
 
 package bdzimmer.pixeleditor.view
 
+import java.awt.GridLayout
 import java.awt.event.{ActionListener, ActionEvent, FocusAdapter, FocusEvent}
 import javax.swing.{JButton, JMenuBar, JMenu, JMenuItem, JPanel, WindowConstants}
+
+import scala.collection.mutable.Buffer
 
 import bdzimmer.pixeleditor.model.TileCollectionModel._
 import bdzimmer.pixeleditor.model.{Color, TileContainer}
@@ -44,6 +47,9 @@ class TileCollectionWindow(
   var pixelsWindow = new PixelsWindow(
       "Pixels", tileCollection.pixels, tileCollection.settings, globalPaletteWindow, tileContainer)
   pixelsWindow.setLocationRelativeTo(null)
+
+  var paletteConfWindow = new PaletteConfWindow(
+      "Palette Configuration", tileCollection.paletteChunks, tileCollection.settings)
 
   ////
 
@@ -109,6 +115,8 @@ class TileCollectionWindow(
 
   override def buildPanel(): JPanel = {
     val panel = new JPanel()
+    panel.setLayout(new GridLayout(4, 1, 5, 5))
+
     val globalPaletteButton = new JButton("Global Palette")
     globalPaletteButton.addActionListener(new ActionListener() {
       def actionPerformed(ae: ActionEvent): Unit = {
@@ -125,8 +133,8 @@ class TileCollectionWindow(
         paletteChunksWindow.setVisible(!isVisible)
       }
     })
-
     panel.add(paletteChunksButton)
+
     val pixelsButton = new JButton("Pixels")
     pixelsButton.addActionListener(new ActionListener() {
       def actionPerformed(ae: ActionEvent): Unit = {
@@ -135,6 +143,16 @@ class TileCollectionWindow(
       }
     })
     panel.add(pixelsButton)
+
+    // TODO: just for testing
+    val paletteConfButton = new JButton("Palette Configurations")
+    paletteConfButton.addActionListener(new ActionListener() {
+      def actionPerformed(ae: ActionEvent): Unit = {
+        val isVisible = paletteConfWindow.isVisible
+        paletteConfWindow.setVisible(!isVisible)
+      }
+    })
+    panel.add(paletteConfButton)
 
     panel
   }

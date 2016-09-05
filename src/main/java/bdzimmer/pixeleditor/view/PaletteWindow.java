@@ -19,6 +19,7 @@ import java.awt.event.KeyListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
+import java.awt.Image;
 
 import javax.swing.JFrame;
 import javax.swing.JLabel;
@@ -274,7 +275,7 @@ public class PaletteWindow extends JFrame {
 
   ///
 
-  public static void drawPalette(BufferedImage image, Color[] palette, int bitsPerChannel, int rows, int cols, int swatchSize) {
+  public static void drawPalette(Image image, Color[] palette, int bitsPerChannel, int rows, int cols, int swatchSize) {
 
     int colorFactor = (1 << (8 - bitsPerChannel));
     Graphics gr = image.getGraphics();

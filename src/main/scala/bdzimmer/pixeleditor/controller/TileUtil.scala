@@ -60,7 +60,7 @@ object TileUtil {
       palOffsets: Array[Integer],
       tileWidth: Int, tileHeight: Int, tilesPerRow: Int): Unit = {
 
-    val numRows = (tiles.length + tilesPerRow - 1) / tilesPerRow - 1
+    val numRows = (tiles.length + tilesPerRow - 1) / tilesPerRow
 
     for (i <- 0 until numRows) {
       for (j <- 0 until tilesPerRow) {

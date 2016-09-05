@@ -60,7 +60,7 @@ object TileCollectionModel {
 
 
   case class PaletteConf(
-    chunks: Buffer[(Int, Buffer[Color])]
+    chunks: Buffer[Named[Array[Color]]]
   )
 
   case class Named[T](name: String, value: T)
@@ -89,8 +89,9 @@ object Experiment {
     val tilesLength = 512
 
     val pal = (0 until 32).map(_ => Color(0, 0, 0)).toArray
-    val names = List("Cave Floor", "Cave Walls", "Baloney", "Cheese", "Snowstorm")
+    val names = List("Cave Floor", "Cave Walls", "Baloney", "Cheese")
     val chunks = names.map(name => Named(name, pal.clone())).toBuffer
+    chunks += Named("Snowstorm", (0 until 64).map(_ => Color(0, 0, 0)).toArray)
 
     val tiles = (0 until tilesLength).map(_ =>
       Tileset.emptyTile(settings.tileWidth, settings.tileHeight)).toArray

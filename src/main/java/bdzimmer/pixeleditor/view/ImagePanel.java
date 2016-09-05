@@ -24,5 +24,9 @@ class ImagePanel extends JPanel {
     super.paintComponent(gr);
     gr.drawImage(image, 0, 0, null);
   }
+  
+  protected Image getImage() {
+	return image;
+  }
 
 }
