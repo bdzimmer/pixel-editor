@@ -15,6 +15,7 @@ import bdzimmer.pixeleditor.model.TileCollectionModel._
 
 class PaletteConfWindow(
     title: String,
+    conf: PaletteConf,
     paletteChunks: Buffer[Named[Array[Color]]],
     settings: Settings) extends CommonWindow {
 
@@ -22,13 +23,13 @@ class PaletteConfWindow(
 
   val cols = settings.viewPaletteCols
 
-  val conf: Buffer[Int] = Buffer()
-
   private val palImages: Buffer[ImagePanel] = Buffer()
 
-  build(WindowConstants.HIDE_ON_CLOSE)
+  build(WindowConstants.DISPOSE_ON_CLOSE)
   rebuild()
+
   setResizable(false)
+  pack()  // necessary after above line
 
   /// ///
 
@@ -52,7 +53,7 @@ class PaletteConfWindow(
       button
     }
 
-    for (i <- 0 until conf.length) {
+    for (i <- 0 until conf.chunkIdxs.length) {
 
       val rowPanel = new JPanel()
       rowPanel.setLayout(new BoxLayout(rowPanel, BoxLayout.LINE_AXIS))
@@ -60,7 +61,7 @@ class PaletteConfWindow(
       val removeButton = rowButton("-")
       removeButton.addActionListener(new ActionListener {
         override def actionPerformed(ae: ActionEvent): Unit = {
-          conf.remove(i)
+          conf.chunkIdxs.remove(i)
           rebuild()
         }
       })
@@ -70,9 +71,9 @@ class PaletteConfWindow(
       upButton.addActionListener(new ActionListener {
         override def actionPerformed(ae: ActionEvent): Unit = {
           if (i > 0) {
-            val temp = conf(i - 1)
-            conf(i - 1) = conf(i)
-            conf(i) = temp
+            val temp = conf.chunkIdxs(i - 1)
+            conf.chunkIdxs(i - 1) = conf.chunkIdxs(i)
+            conf.chunkIdxs(i) = temp
           }
           rebuild()
         }
@@ -82,20 +83,20 @@ class PaletteConfWindow(
       val downButton = rowButton("v")
       downButton.addActionListener(new ActionListener {
         override def actionPerformed(ae: ActionEvent): Unit = {
-          if (i < conf.length - 1) {
-            val temp = conf(i + 1)
-            conf(i + 1) = conf(i)
-            conf(i) = temp
+          if (i < conf.chunkIdxs.length - 1) {
+            val temp = conf.chunkIdxs(i + 1)
+            conf.chunkIdxs(i + 1) = conf.chunkIdxs(i)
+            conf.chunkIdxs(i) = temp
           }
           rebuild()
         }
       })
       rowPanel.add(downButton)
 
-      if (conf(i) >= paletteChunks.length) {
-        conf(i) = paletteChunks.length - 1
+      if (conf.chunkIdxs(i) >= paletteChunks.length) {
+        conf.chunkIdxs(i) = paletteChunks.length - 1
       }
-      val chunkIdx = conf(i)
+      val chunkIdx = conf.chunkIdxs(i)
 
       val selector = chunkSelector()
       selector.setSelectedIndex(chunkIdx)
@@ -103,7 +104,7 @@ class PaletteConfWindow(
       selector.setAlignmentY(Component.TOP_ALIGNMENT)
       selector.addActionListener(new ActionListener {
         override def actionPerformed(ae: ActionEvent): Unit = {
-          conf(i) = ae.getSource.asInstanceOf[JComboBox[String]].getSelectedIndex
+          conf.chunkIdxs(i) = ae.getSource.asInstanceOf[JComboBox[String]].getSelectedIndex
           rebuild()
         }
       })
@@ -142,7 +143,7 @@ class PaletteConfWindow(
     val addButton = rowButton("+")
     addButton.addActionListener(new ActionListener {
       override def actionPerformed(ae: ActionEvent): Unit = {
-        conf += 0
+        conf.chunkIdxs += 0
         rebuild()
       }
     })
@@ -172,8 +173,8 @@ class PaletteConfWindow(
     println("PaletteConfWindow focus gained")
 
     // redraw the palette images using the configuration
-    for (i <- 0 until conf.length) {
-      val pal = paletteChunks(conf(i)).value
+    for (i <- 0 until conf.chunkIdxs.length) {
+      val pal = paletteChunks(conf.chunkIdxs(i)).value
       val rows = (pal.length + cols - 1) / cols
       val imagePanel = palImages(i)
       PaletteWindow.drawPalette(

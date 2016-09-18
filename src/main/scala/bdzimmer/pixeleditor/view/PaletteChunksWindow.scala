@@ -6,10 +6,11 @@ import scala.collection.mutable.Buffer
 
 import java.awt.event.{ActionEvent, ActionListener, FocusAdapter, FocusEvent, MouseAdapter, MouseEvent}
 import java.awt.{GridLayout, BorderLayout, Dimension}
-import javax.swing.{JButton, JPanel, JOptionPane, JToolBar, WindowConstants}
+import javax.swing.{JButton, JComboBox, JPanel, JOptionPane, JTextField, JToolBar, WindowConstants}
 
 import bdzimmer.pixeleditor.model.TileCollectionModel._
 import bdzimmer.pixeleditor.model.Color
+import bdzimmer.pixeleditor.controller.TileUtil
 
 
 
@@ -88,6 +89,7 @@ class PaletteChunksWindow(
       }
     })
     edit.setFocusable(false)
+    mainToolbar.add(edit)
 
     val rename = new JButton("Rename")
     rename.addActionListener(new ActionListener() {
@@ -105,9 +107,34 @@ class PaletteChunksWindow(
       }
     })
     rename.setFocusable(false)
-
-    mainToolbar.add(edit)
     mainToolbar.add(rename)
+
+    // TODO: add a new palette chunk
+    val add = new JButton("Add")
+    add.addActionListener(new ActionListener() {
+      def actionPerformed(event: ActionEvent): Unit = {
+
+        val name = new JTextField("New Palette Chunk")
+
+        val maxMultiple = settings.paletteSize / settings.colorsPerTile
+        val size = new JComboBox((1 to maxMultiple).map(x => (x * settings.colorsPerTile).toString).toArray)
+
+        val option = JOptionPane.showConfirmDialog(
+            null, Array("Name:", name, "Size:", size), "Add Chunk", JOptionPane.OK_CANCEL_OPTION)
+
+        if (option == JOptionPane.OK_OPTION) {
+          val newChunk = Named(
+              name.getText,
+              TileUtil.colorArray((size.getSelectedIndex + 1) * settings.colorsPerTile))
+          PaletteChunksWindow.this.add(newChunk)
+          PaletteChunksWindow.this.rebuild()
+        }
+
+      }
+    })
+    add.setFocusable(false)
+    mainToolbar.add(add)
+
     mainToolbar.setFloatable(false)
 
     mainToolbar

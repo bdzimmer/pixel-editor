@@ -48,8 +48,14 @@ class TileCollectionWindow(
       "Pixels", tileCollection.pixels, tileCollection.settings, globalPaletteWindow, tileContainer)
   pixelsWindow.setLocationRelativeTo(null)
 
-  var paletteConfWindow = new PaletteConfWindow(
-      "Palette Configuration", tileCollection.paletteChunks, tileCollection.settings)
+  var vMapWindow = new VMapWindow(
+      "VMap - " + tileCollection.vmaps(0).name,
+      tileCollection.vmaps(0).value,
+      tileCollection.pixels,
+      tileCollection.paletteChunks,
+      globalPalette,
+      new DumbUpdater(globalPaletteWindow),
+      tileCollection.settings)
 
   ////
 
@@ -145,14 +151,14 @@ class TileCollectionWindow(
     panel.add(pixelsButton)
 
     // TODO: just for testing
-    val paletteConfButton = new JButton("Palette Configurations")
-    paletteConfButton.addActionListener(new ActionListener() {
+    val vMapButton = new JButton("VMap")
+    vMapButton.addActionListener(new ActionListener() {
       def actionPerformed(ae: ActionEvent): Unit = {
-        val isVisible = paletteConfWindow.isVisible
-        paletteConfWindow.setVisible(!isVisible)
+        val isVisible = vMapWindow.isVisible
+        vMapWindow.setVisible(!isVisible)
       }
     })
-    panel.add(paletteConfButton)
+    panel.add(vMapButton)
 
     panel
   }

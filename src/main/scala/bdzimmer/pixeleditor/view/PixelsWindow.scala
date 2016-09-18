@@ -3,12 +3,12 @@
 package bdzimmer.pixeleditor.view
 
 import scala.collection.mutable.Buffer
+
 import java.awt.{BorderLayout}
-import java.awt.event.{FocusAdapter, FocusEvent, MouseAdapter, MouseEvent}
+import java.awt.event.{MouseAdapter, MouseEvent}
 import java.awt.image.BufferedImage
 import javax.swing.{JPanel, JToolBar, JToggleButton, WindowConstants}
 import javax.swing.event.{ChangeListener, ChangeEvent}
-
 
 import bdzimmer.pixeleditor.controller.TileUtil
 import bdzimmer.pixeleditor.model.TileCollectionModel._
@@ -27,12 +27,11 @@ class PixelsWindow(
 
   var drawGrid = false
   var drawTileNumbers = false
-
   var curPalOffset = 0
 
-  val rows = (pixels.tiles.length + settings.viewTileCols - 1) / settings.viewTileCols - 1;
+  val rows = (pixels.tiles.length + settings.viewTileCols - 1) / settings.viewTileCols;
 
-  val updater = new TilesUpdater(pixels.tiles, settings)
+  val updater = new PixelsTilesUpdater(pixels.tiles, settings)
   val scrollPane = new WidgetScroller(Buffer(updater.widget), selectable = false)
 
   updater.widget.addMouseListener(new MouseAdapter() {
@@ -185,7 +184,7 @@ class PixelsWindow(
 
   ///////
 
-  class TilesUpdater(
+  class PixelsTilesUpdater(
       tiles: Array[Tile], settings: Settings) extends WidgetUpdater  {
 
     val rows = (tiles.length + settings.viewTileCols - 1) / settings.viewTileCols

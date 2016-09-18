@@ -37,12 +37,12 @@ import javax.swing.event.ChangeListener;
 public class PaletteWindow extends JFrame {
 
   private static final long serialVersionUID = 1L;
-  public static final Canvas cColorLabel = new Canvas();
 
-  private static final int swatchSize = 24;
+  private static final int swatchSize = 16;
   private static final int cols = 16;
 
   private final Color[] palette;
+  private final Canvas cColorLabel;
   private final BufferedImage image;
   private final ImagePanel imagePanel;
   private final int length;
@@ -75,7 +75,8 @@ public class PaletteWindow extends JFrame {
     add(imagePanel);
 
     // Currently selected color
-    cColorLabel.setSize(64, 64);
+    cColorLabel = new Canvas();
+    cColorLabel.setSize(32, 32);
     cColorLabel.setBackground(new java.awt.Color(0, 0, 0));
 
     this.bitsPerChannel = bitsPerChannel;
@@ -217,12 +218,10 @@ public class PaletteWindow extends JFrame {
   public void refreshPalette() {
 
     // redraw palette swatches
-
     PaletteWindow.drawPalette(image, palette, bitsPerChannel, rows, cols, swatchSize);
 
-    Graphics gr = image.getGraphics();
-
     // draw the selection
+    Graphics gr = image.getGraphics();
     final java.awt.Color selectColor = new java.awt.Color(230, 0, 230);
     gr.setColor(selectColor);
     int x = (selectedIdx % cols) * swatchSize;
@@ -255,6 +254,14 @@ public class PaletteWindow extends JFrame {
     }
     refreshPalette();
   }
+  
+  public void paint(Graphics g) {
+	  super.paint(g);
+	  refreshPalette();
+  }
+  
+  
+  ////////
 
 
   public int getSelectedIdx() {

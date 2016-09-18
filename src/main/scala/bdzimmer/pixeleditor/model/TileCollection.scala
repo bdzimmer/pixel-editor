@@ -32,7 +32,7 @@ object TileCollectionModel {
     colorsPerTile: Int,
     tileWidth: Int,
     tileHeight: Int,
-    vmapSize: Int,
+    vMapSize: Int,
 
     // view settings
     viewPaletteCols: Int,
@@ -45,8 +45,8 @@ object TileCollectionModel {
   )
 
   case class VMap(
-    palConfs: Buffer[PaletteConf],
-    entries:  Buffer[VMapEntry]
+    palConfs: Buffer[Named[PaletteConf]],
+    entries:  Array[VMapEntry]
   )
 
 
@@ -60,7 +60,7 @@ object TileCollectionModel {
 
 
   case class PaletteConf(
-    chunks: Buffer[Named[Array[Color]]]
+    chunkIdxs: Buffer[Int]
   )
 
   case class Named[T](name: String, value: T)
@@ -82,7 +82,7 @@ object Experiment {
         colorsPerTile = 16,
         tileWidth     = 16,
         tileHeight    = 16,
-        vmapSize      = 256,
+        vMapSize      = 256,
         viewPaletteCols = 16,
         viewTileCols    = 16)
 
@@ -99,7 +99,7 @@ object Experiment {
     val tc = TileCollection(
       settings,
       Pixels(tiles, TileUtil.integerArray(tilesLength)),
-      Buffer(),
+      Buffer(Named("Mountainside Cave", VMap(Buffer(), Array()))),
       chunks)
 
      new TileCollectionWindow("Test", tc, "junk").setVisible(true)
