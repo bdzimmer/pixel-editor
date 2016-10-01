@@ -65,6 +65,28 @@ object TileCollectionModel {
 
   case class Named[T](name: String, value: T)
 
+
+  def emptyCollection(settings: Settings, tilesLength: Int): TileCollection = {
+    val pal = TileUtil.colorArray(settings.paletteSize)
+
+    val tiles = (0 until tilesLength).map(_ =>
+      Tileset.emptyTile(settings.tileWidth, settings.tileHeight)).toArray
+
+    val pixels = Pixels(tiles, TileUtil.integerArray(tilesLength))
+    val vMaps: Buffer[Named[VMap]] = Buffer()
+    val chunks: Buffer[Named[Array[Color]]] = Buffer()
+
+    val tc = TileCollection(settings, pixels, vMaps, chunks)
+
+    // some problems with the GUI without this for now
+    tc.vmaps += Named("Test", VMap(Buffer(), Array()))
+    tc.paletteChunks += Named("Test", TileUtil.colorArray(16))
+
+    tc
+
+  }
+
+
 }
 
 
@@ -73,36 +95,15 @@ object Experiment {
 
   import TileCollectionModel._
   import bdzimmer.pixeleditor.view.TileCollectionWindow
+  import bdzimmer.pixeleditor.view.SettingsDialog
 
   def main(args: Array[String]): Unit = {
 
-    val settings = new Settings(
-        bitsPerChannel  = 5,
-        paletteSize   = 256,
-        colorsPerTile = 16,
-        tileWidth     = 16,
-        tileHeight    = 16,
-        vMapSize      = 256,
-        viewPaletteCols = 16,
-        viewTileCols    = 16)
+    val tc = emptyCollection(SettingsDialog.Default, 512)
 
-    val tilesLength = 512
-
-    val pal = (0 until 32).map(_ => Color(0, 0, 0)).toArray
-    val names = List("Cave Floor", "Cave Walls", "Baloney", "Cheese")
-    val chunks = names.map(name => Named(name, pal.clone())).toBuffer
-    chunks += Named("Snowstorm", (0 until 64).map(_ => Color(0, 0, 0)).toArray)
-
-    val tiles = (0 until tilesLength).map(_ =>
-      Tileset.emptyTile(settings.tileWidth, settings.tileHeight)).toArray
-
-    val tc = TileCollection(
-      settings,
-      Pixels(tiles, TileUtil.integerArray(tilesLength)),
-      Buffer(Named("Mountainside Cave", VMap(Buffer(), Array()))),
-      chunks)
-
-     new TileCollectionWindow("Test", tc, "junk").setVisible(true)
+    new TileCollectionWindow(
+        "Test", tc,
+        "junk", "junk").setVisible(true)
 
   }
 }

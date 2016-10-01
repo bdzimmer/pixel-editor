@@ -4,58 +4,50 @@
 
 package bdzimmer.pixeleditor.view
 
+import java.io.{File, FileReader, FileWriter, BufferedReader, BufferedWriter}
+
 import java.awt.GridLayout
 import java.awt.event.{ActionListener, ActionEvent, FocusAdapter, FocusEvent}
-import javax.swing.{JButton, JMenuBar, JMenu, JMenuItem, JPanel, WindowConstants}
+import javax.swing.{JFileChooser, JButton, JMenuBar, JMenu, JMenuItem, JPanel, WindowConstants}
 
 import scala.collection.mutable.Buffer
 
 import bdzimmer.pixeleditor.model.TileCollectionModel._
-import bdzimmer.pixeleditor.model.{Color, TileContainer}
+import bdzimmer.pixeleditor.model.{Color, TileContainer, TileCollectionModel}
+import bdzimmer.pixeleditor.controller.IO
+
+import bdzimmer.util.StringUtils._
+
+
+// TODO: this probably belongs in IO or somewhere similar
+case class TileCollectionFiles(filename: String) {
+  val settingsFile      = new File(filename / "settings")
+  val pixelsFile        = new File(filename / "pixels")
+  val vMapsFile         = new File(filename / "vmaps")
+  val paletteChunksFile = new File(filename / "palettechunks")
+}
+
 
 class TileCollectionWindow(
     var titleString: String,
     var tileCollection: TileCollection,
-    var filename: String) extends CommonWindow {
+    var filename: String,
+    var workingDirname: String) extends CommonWindow {
 
   updateTitle()
 
   val tileContainer = new TileContainer
 
-  // initialize global palette window
+  // initialize global palette windo
 
-  val reds =   (0 until 8).map(x => Color(x * 2, 0,     0))
-  val greens = (0 until 8).map(x => Color(0,     x * 2, 0))
-  val blues =  (0 until 8).map(x => Color(0,     0,     x * 2))
+  var globalPalette: Array[Color] = null
 
-  // val globalPalette = (0 until tileCollection.settings.paletteSize).map(x => Color(0, 0, 0)).toArray
-  val globalPalette = (reds ++ greens ++ blues ++ greens ++ (32 until 256).map(_ => Color(0, 0, 0))).toArray
+  var globalPaletteWindow: PaletteWindow = null
+  var paletteChunksWindow: PaletteChunksWindow = null
+  var pixelsWindow: PixelsWindow = null
+  var vMapWindow: VMapWindow = null
 
-  val globalPaletteWindow = new PaletteWindow(
-      "Global Palette", globalPalette, tileCollection.settings.bitsPerChannel, null)
-
-  // initialize Palette Chunks window
-
-  var paletteChunksWindow = new PaletteChunksWindow(
-      "Palette Chunks",
-      tileCollection.paletteChunks,
-      tileCollection.settings)
-  paletteChunksWindow.setLocationRelativeTo(null)
-
-  // initialize Pixels window
-
-  var pixelsWindow = new PixelsWindow(
-      "Pixels", tileCollection.pixels, tileCollection.settings, globalPaletteWindow, tileContainer)
-  pixelsWindow.setLocationRelativeTo(null)
-
-  var vMapWindow = new VMapWindow(
-      "VMap - " + tileCollection.vmaps(0).name,
-      tileCollection.vmaps(0).value,
-      tileCollection.pixels,
-      tileCollection.paletteChunks,
-      globalPalette,
-      new DumbUpdater(globalPaletteWindow),
-      tileCollection.settings)
+  initWindows()
 
   ////
 
@@ -64,12 +56,98 @@ class TileCollectionWindow(
 
   //////
 
-  def newCollection(): Unit = {}
-  def openCollection(): Unit = {}
-  def saveCollection(): Unit = {}
+
+  def newCollection(): Unit = {
+
+    val settings = SettingsDialog.getSettings()
+
+    tileCollection = TileCollectionModel.emptyCollection(settings, 1024)
+
+    initWindows()
+
+  }
+
+
+  def readCollection(filename: String): Unit = {
+
+    val tcf = TileCollectionFiles(filename)
+
+    val settings = IO.readSettings(tcf.settingsFile)
+    val pixels = IO.readPixels(tcf.pixelsFile, settings)
+    val vMaps = IO.readVMaps(tcf.vMapsFile, settings)
+    val paletteChunks = IO.readPaletteChunks(tcf.paletteChunksFile)
+
+    tileCollection = new TileCollection(
+      settings,
+      pixels,
+      vMaps,
+      paletteChunks
+    )
+
+  }
+
+
+  def writeCollection(filename: String): Unit = {
+
+    val tcf = TileCollectionFiles(filename)
+
+    new File(filename).mkdirs()
+
+    IO.writeSettings(tcf.settingsFile, tileCollection.settings)
+    IO.writePixels(tcf.pixelsFile, tileCollection.pixels, tileCollection.settings)
+    IO.writeVMaps(tcf.vMapsFile, tileCollection.vmaps, tileCollection.settings)
+    IO.writePaletteChunks(tcf.paletteChunksFile, tileCollection.paletteChunks)
+
+  }
+
 
   def updateTitle(): Unit = {
     setTitle(titleString)
+  }
+
+
+  def initWindows(): Unit = {
+
+    List(globalPaletteWindow, pixelsWindow, vMapWindow, paletteChunksWindow).foreach(x => {
+      if (x != null) {
+        x.dispose()
+      }
+    })
+
+    /*
+    val reds =   (0 until 8).map(x => Color(x * 2, 0,     0))
+    val greens = (0 until 8).map(x => Color(0,     x * 2, 0))
+    val blues =  (0 until 8).map(x => Color(0,     0,     x * 2))
+    val globalPalette = (reds ++ greens ++ blues ++ greens ++ (32 until 256).map(_ => Color(0, 0, 0))).toArray
+    */
+
+    globalPalette = (0 until tileCollection.settings.paletteSize).map(_ => Color(0, 0, 0)).toArray
+
+    globalPaletteWindow = new PaletteWindow(
+      "Global Palette", globalPalette, tileCollection.settings.bitsPerChannel, null)
+
+    // initialize Pixels window
+    pixelsWindow = new PixelsWindow(
+        "Pixels", tileCollection.pixels, tileCollection.settings, globalPaletteWindow, tileContainer)
+    pixelsWindow.setLocationRelativeTo(null)
+
+    // intiialize VMap window
+    vMapWindow = new VMapWindow(
+        "VMap - " + tileCollection.vmaps(0).name,
+        tileCollection.vmaps(0).value,
+        tileCollection.pixels,
+        tileCollection.paletteChunks,
+        globalPalette,
+        new DumbUpdater(globalPaletteWindow),
+        tileCollection.settings)
+
+    // initialize Palette Chunks window
+    paletteChunksWindow = new PaletteChunksWindow(
+        "Palette Chunks",
+        tileCollection.paletteChunks,
+        tileCollection.settings)
+    paletteChunksWindow.setLocationRelativeTo(null)
+
   }
 
   /////
@@ -90,26 +168,43 @@ class TileCollectionWindow(
     val jmOpen = new JMenuItem("Open")
     jmOpen.addActionListener(new ActionListener() {
       def actionPerformed(ae: ActionEvent) {
-        openCollection()
+        fileChooser(workingDirname, save = false).foreach({case (wd, fn) => {
+          readCollection(wd / fn)
+          workingDirname = wd
+          filename       = fn
+        }})
+      }
+    })
+
+    val jmReload = new JMenuItem("Reload")
+    jmReload.addActionListener(new ActionListener() {
+      def actionPerformed(ae: ActionEvent) {
+        readCollection(workingDirname / filename)
       }
     })
 
     val jmSave = new JMenuItem("Save")
     jmSave.addActionListener(new ActionListener() {
       def actionPerformed(ae: ActionEvent) {
-        saveCollection()
+        writeCollection(workingDirname / filename)
       }
     })
 
     val jmSaveAs = new JMenuItem("Save As")
     jmSaveAs.addActionListener(new ActionListener() {
       def actionPerformed(ae: ActionEvent) {
-        saveCollection()
+        fileChooser(workingDirname, save = true).foreach({case (wd, fn) => {
+          writeCollection(wd / fn)
+          workingDirname = wd
+          filename       = fn
+        }})
       }
     })
 
     fileMenu.add(jmNew)
     fileMenu.add(jmOpen)
+    fileMenu.add(jmReload)
+    fileMenu.addSeparator()
     fileMenu.add(jmSave)
     fileMenu.add(jmSaveAs)
     mainMenu.add(fileMenu)
@@ -161,6 +256,56 @@ class TileCollectionWindow(
     panel.add(vMapButton)
 
     panel
+  }
+
+  override def buildStatusBar(): StatusBar = {
+    new StatusBar(20, 0, 0)
+  }
+
+  override def onFocus(): Unit = {
+    updateMemoryUsageDisplay()
+  }
+
+
+  ////
+
+  // TODO: put this filechooser code somewhere more general
+  private def fileChooser(dirname: String, save: Boolean): Option[(String, String)] = {
+
+    val jfc = new JFileChooser()
+    jfc.setCurrentDirectory(new File(dirname))
+    val res = if (save) {
+      jfc.setDialogType(JFileChooser.SAVE_DIALOG)
+      jfc.showSaveDialog(null)
+
+    } else {
+      jfc.setDialogType(JFileChooser.OPEN_DIALOG)
+      jfc.showOpenDialog(null)
+    }
+
+
+    if (res == JFileChooser.APPROVE_OPTION) {
+      val inputFile = jfc.getSelectedFile()
+      if (inputFile != null) {
+        Some((inputFile.getParent, inputFile.getName))
+      } else {
+        None
+      }
+    } else {
+      None
+    }
+
+  }
+
+
+  def updateMemoryUsageDisplay() {
+    System.gc()
+    val runtime = Runtime.getRuntime()
+    val mb = 1024 * 1024;
+    val totalMemory = runtime.totalMemory() / mb
+    val freeMemory  = runtime.freeMemory() / mb
+    // val maxMemory   = runtime.maxMemory()  / mb
+    statusBar.update((totalMemory - freeMemory) + " / " + totalMemory + " MB", "", "")
   }
 
 
