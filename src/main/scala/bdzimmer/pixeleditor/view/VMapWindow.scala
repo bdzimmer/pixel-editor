@@ -7,15 +7,17 @@ package bdzimmer.pixeleditor.view
 
 import scala.collection.mutable.Buffer
 
-import java.awt.{BorderLayout}
+import java.awt.{BorderLayout, GridLayout}
 import java.awt.event.{ActionEvent, ActionListener, MouseAdapter, MouseEvent}
 import java.awt.image.BufferedImage
-import javax.swing.{JButton, JComboBox, JOptionPane, JPanel, JToolBar, JToggleButton, WindowConstants}
+import javax.swing.{JButton, JComboBox, JOptionPane, JPanel, JToolBar, JToggleButton, JSeparator, WindowConstants, SwingConstants}
 import javax.swing.event.{ChangeListener, ChangeEvent}
 
 import bdzimmer.pixeleditor.model.TileCollectionModel._
+import bdzimmer.pixeleditor.controller.TileUtil
 import bdzimmer.pixeleditor.model.{Color, Tile, TileContainer}
 import bdzimmer.pixeleditor.controller.PalUtil
+import bdzimmer.pixeleditor.model.IndexedGraphics
 
 
 class VMapWindow(
@@ -25,6 +27,8 @@ class VMapWindow(
     paletteChunks: Buffer[Named[Array[Color]]],
     globalPalette: Array[Color],
     globalPaletteUpdater: Updater,
+    tileContainer: TileContainer,
+    zoomWindow: ZoomedTileWindow,
     settings: Settings) extends CommonWindow {
 
   setTitle(title)
@@ -42,6 +46,8 @@ class VMapWindow(
 
   var palConfIdx = 0
 
+  var vMapEntryIdx = 0
+
   updater.widget.addMouseListener(new MouseAdapter() {
      override def mouseClicked(event: MouseEvent): Unit = {
        handleClicks(event, true)
@@ -53,6 +59,8 @@ class VMapWindow(
     repaint()
   }
 
+  val editor = new VMapEntryEditor(vMap.entries, updater, settings)
+
   build(WindowConstants.HIDE_ON_CLOSE)
   rebuild()
   pack()
@@ -62,7 +70,56 @@ class VMapWindow(
   // allows editing of a VMapEntry
 
   def handleClicks(event: MouseEvent, allowCopy: Boolean) = {
-    // TODO: implement handleClicks
+
+    val selectedIdxAny =
+        (event.getY() / (settings.tileHeight * VMapWindow.Scale)) * settings.viewTileCols +
+        (event.getX() / (settings.tileWidth * VMapWindow.Scale))
+
+    val vMapEntryIdx = if (selectedIdxAny >= pixels.tiles.length) {
+      pixels.tiles.length - 1;
+    } else {
+      selectedIdxAny
+    }
+
+    val pixelsIdx = vMap.entries(vMapEntryIdx).pixelsIdx
+
+    println("selected entry index: " + vMapEntryIdx)
+
+    if (event.isMetaDown()) {
+
+      selectTile(pixelsIdx)
+      editor.selectEntry(vMapEntryIdx)
+
+    } else  if (allowCopy) {
+
+      // TODO: vMapEntry copy functionality
+      updater.update()
+
+    }
+
+    statusBar.update(0, 0, "" + vMapEntryIdx);
+
+  }
+
+
+  // select a tile from the set into the tile container
+  // and show it in the ZoomWindow
+  def selectTile(pixelsIdx: Int): Unit = {
+
+    // set the current tile
+    tileContainer.setTileIndex(pixelsIdx);
+    val bitmap = pixels.tiles(pixelsIdx).bitmap
+    tileContainer.setTileBitmap(bitmap)
+    curPalOffset = pixels.defaultPalOffsets(pixelsIdx)
+
+    // show in zoom window
+    zoomWindow.setTile(
+        bitmap,
+        new ArrayContainer(pixels.defaultPalOffsets, pixelsIdx),
+        settings.colorsPerTile)
+    zoomWindow.toFront()
+    zoomWindow.setVisible(true)
+
   }
 
 
@@ -122,10 +179,11 @@ class VMapWindow(
     panel.setLayout(new BorderLayout())
     panel.add(scrollPane, BorderLayout.CENTER)
     panel.add(scrollPane.scrollBar, BorderLayout.EAST)
+    panel.add(buildToolBars(), BorderLayout.NORTH)
     panel
   }
 
-  override def buildToolBar(): JToolBar = {
+  def buildToolBars(): JPanel = {
 
     val mainToolbar = new JToolBar()
 
@@ -134,7 +192,7 @@ class VMapWindow(
       override def stateChanged(e: ChangeEvent) {
         println("grid show: "+ drawGridButton.isSelected)
         drawGrid = drawGridButton.isSelected
-        updater.update
+        updater.update()
       }
     });
     drawGridButton.setFocusable(false)
@@ -145,7 +203,7 @@ class VMapWindow(
       override def stateChanged(e: ChangeEvent) {
         println("numbers show: "+ drawTileNumbersButton.isSelected)
         drawTileNumbers = drawTileNumbersButton.isSelected
-        updater.update
+        updater.update()
       }
     });
     drawTileNumbersButton.setFocusable(false);
@@ -155,10 +213,19 @@ class VMapWindow(
 
     rebuildPalConfsPanel()
     mainToolbar.add(palConfsPanel)
+    mainToolbar.setFloatable(false)
 
-    mainToolbar.setFloatable(false);
+    val editorToolbar = new JToolBar()
+    for (component <- editor.components()) {
+      editorToolbar.add(component);
+    }
+    editorToolbar.setFloatable(false);
 
-    return mainToolbar;
+    val panel = new JPanel( new GridLayout(0, 1))
+    panel.add(mainToolbar)
+    panel.add(editorToolbar)
+
+    return panel;
   }
 
 
@@ -168,18 +235,69 @@ class VMapWindow(
 
   ///////
 
-  // TODO: implement VMapTilesUpdater
+  // TODO: a lot of this is duplicate code with the PixelsTilesUpdater
 
   class VMapTilesUpdater(
       entries: Array[VMapEntry],
       tiles: Array[Tile],
       settings: Settings) extends WidgetUpdater {
 
-    val emptyImage = new BufferedImage(512, 512, BufferedImage.TYPE_INT_RGB)
-    val widget = new ImageWidget("", emptyImage, List(), 0, 0)
+    val rows = (tiles.length + settings.viewTileCols - 1) / settings.viewTileCols
+
+    val indexedGraphics = new IndexedGraphics(
+        globalPalette,
+        settings.bitsPerChannel,
+        rows * settings.tileHeight,
+        settings.viewTileCols * settings.tileWidth,
+        VMapWindow.Scale)
+
+    indexedGraphics.setGridDimensions(settings.tileHeight, settings.tileWidth)
+
+    draw()
+    val widget = new ImageWidget("", indexedGraphics.getImage, List(), 0, 0)
+
+    def draw(): Unit = {
+      println("PixelsUpdater draw")
+      indexedGraphics.updateClut()
+
+      // TODO: x and y flips
+      val tiles = vMap.entries.map(x => pixels.tiles(x.pixelsIdx))
+      val palOffsets = vMap.entries.map(x => new Integer(x.palOffset))
+
+      TileUtil.drawTileset(
+          indexedGraphics,
+          tiles,
+          palOffsets,
+          settings.tileWidth,
+          settings.tileHeight,
+          settings.viewTileCols)
+
+      if (drawGrid) {
+        TileUtil.drawGrid(
+            indexedGraphics.getImage,
+            settings.tileWidth  * VMapWindow.Scale,
+            settings.tileHeight * VMapWindow.Scale)
+      }
+
+      if (drawTileNumbers) {
+        TileUtil.drawNumbers(
+            indexedGraphics.getImage, vMap.entries.size,
+            settings.viewTileCols, rows,
+            settings.tileWidth * VMapWindow.Scale,
+            settings.tileHeight * VMapWindow.Scale)
+      }
+
+    }
+
 
     def update(): Unit = {
-      // do nothing
+      // TODO: actual implementation
+      println("updating VMap Editor - first 8 entries")
+      for (x <- entries.take(8)) {
+        println(x)
+      }
+      draw()
+      widget.repaint()
     }
 
   }

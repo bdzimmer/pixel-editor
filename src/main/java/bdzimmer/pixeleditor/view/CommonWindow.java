@@ -54,8 +54,8 @@ public abstract class CommonWindow extends JFrame {
 
     addWindowFocusListener(new WindowAdapter() {
       public void windowGainedFocus(WindowEvent event) {
-	    onFocus();
-	  }
+  	    onFocus();
+  	  }
     });
     setFocusable(true);
   }

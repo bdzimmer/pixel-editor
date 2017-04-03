@@ -23,6 +23,8 @@ import javax.swing.JPanel;
 import javax.swing.JToggleButton;
 import javax.swing.JToolBar;
 
+import java.util.ArrayList;
+
 
 import bdzimmer.pixeleditor.controller.FloodFill;
 import bdzimmer.pixeleditor.model.IndexedGraphics;
@@ -44,7 +46,7 @@ public class ZoomedTileWindow extends JFrame {
   private boolean showGridlines;
 
   private PaletteWindow paletteWindow;
-  private Updater updater;
+  private ArrayList<Updater> updaters = new ArrayList<Updater>();
 
   private IndexedGraphics dosGraphics;
   private IndexedGraphics tileTile;
@@ -69,13 +71,11 @@ public class ZoomedTileWindow extends JFrame {
       int[][] tile,
       Container<Integer> palOffset,
       int paletteSize,
-      PaletteWindow paletteWindow,
-      Updater updater) {
+      PaletteWindow paletteWindow) {
 
     this.zoomFactor = 16;
 
     this.paletteWindow = paletteWindow;
-    this.updater = updater;
     this.tile = tile;
     this.palOffset = palOffset;
     this.paletteSize = paletteSize;
@@ -113,7 +113,9 @@ public class ZoomedTileWindow extends JFrame {
       // Only repaint the tileWindow when the mouse is released
       public void mouseReleased(MouseEvent event) {
         // tileWindow.repaint();
-        ZoomedTileWindow.this.updater.update();
+        for (Updater updater : ZoomedTileWindow.this.updaters) {
+          updater.update();
+        }
       }
     });
 
@@ -373,7 +375,9 @@ public class ZoomedTileWindow extends JFrame {
 
     repaint();
     // this.tileWindow.repaint();
-    updater.update();
+    for (Updater updater : this.updaters) {
+      updater.update();
+    }
   }
 
   /*
@@ -410,7 +414,7 @@ public class ZoomedTileWindow extends JFrame {
 
       if (tud < this.tile.length && tlr < this.tile[0].length) {
         if (!event.isMetaDown()) { // right click
-        	
+
           int colorIdx = 0; // color to set
           if (penMode == 0 || penMode == 1) { // normal pen
         	if (penMode == 0) {
@@ -425,14 +429,14 @@ public class ZoomedTileWindow extends JFrame {
             FloodFill.floodFill(this.tile, colorIdx % paletteSize, tud, tlr);
             System.out.println("flood color " + colorIdx);
           }
-   
+
           int newPalOffset = colorIdx - colorIdx % paletteSize;
           if (newPalOffset != palOffset.get()) {
         	  System.out.println("updating palette offset to " + newPalOffset);
         	  palOffset.set(newPalOffset);
         	  TileUtil.reIndex(tile, paletteSize);
           }
-          
+
         } else {
           paletteWindow.setSelectedIdx(palOffset.get() + tile[tud][tlr]);
           paletteWindow.repaint();
@@ -451,17 +455,17 @@ public class ZoomedTileWindow extends JFrame {
       int[][] tile,
       Container<Integer> palOffset,
       int paletteSize) {
-	  
+
     this.tile = tile;
     this.tileHeight = tile.length;
     this.tileWidth = tile[0].length;
     this.palOffset = palOffset;
     this.paletteSize = paletteSize;
     updateGraphics();
-    
+
     System.out.println("zoomedtilewindow: set tile; palOffset: " + palOffset.get());
   }
-  
+
 
   public int[][] getTile() {
     return tile;
@@ -587,6 +591,10 @@ public class ZoomedTileWindow extends JFrame {
 
     // draw the tileprops.
     // this.updateTileProps();
+  }
+
+  public ArrayList<Updater> getUpdaters() {
+    return this.updaters;
   }
 
 }

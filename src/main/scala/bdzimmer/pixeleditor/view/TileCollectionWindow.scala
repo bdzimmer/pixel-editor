@@ -46,6 +46,7 @@ class TileCollectionWindow(
   var paletteChunksWindow: PaletteChunksWindow = null
   var pixelsWindow: PixelsWindow = null
   var vMapWindow: VMapWindow = null
+  var zoomWindow: ZoomedTileWindow = null
 
   initWindows()
 
@@ -108,7 +109,7 @@ class TileCollectionWindow(
 
   def initWindows(): Unit = {
 
-    List(globalPaletteWindow, pixelsWindow, vMapWindow, paletteChunksWindow).foreach(x => {
+    List(globalPaletteWindow, pixelsWindow, vMapWindow, paletteChunksWindow, zoomWindow).foreach(x => {
       if (x != null) {
         x.dispose()
       }
@@ -121,15 +122,34 @@ class TileCollectionWindow(
     val globalPalette = (reds ++ greens ++ blues ++ greens ++ (32 until 256).map(_ => Color(0, 0, 0))).toArray
     */
 
+
+
     globalPalette = (0 until tileCollection.settings.paletteSize).map(_ => Color(0, 0, 0)).toArray
 
     globalPaletteWindow = new PaletteWindow(
       "Global Palette", globalPalette, tileCollection.settings.bitsPerChannel, null)
 
+    zoomWindow = new ZoomedTileWindow(
+        "Zoom",
+        tileContainer.getTileBitmap,
+        new SimpleContainer(0),
+        tileCollection.settings.colorsPerTile,
+        globalPaletteWindow)
+
+    zoomWindow.setDefaultCloseOperation(WindowConstants.HIDE_ON_CLOSE)
+    zoomWindow.setVisible(false)
+
+
     // initialize Pixels window
     pixelsWindow = new PixelsWindow(
-        "Pixels", tileCollection.pixels, tileCollection.settings, globalPaletteWindow, tileContainer)
+        "Pixels",
+        tileCollection.pixels,
+        tileCollection.settings,
+        globalPaletteWindow,
+        tileContainer,
+        zoomWindow)
     pixelsWindow.setLocationRelativeTo(null)
+    zoomWindow.getUpdaters.add(pixelsWindow.updater)
 
     // intiialize VMap window
     vMapWindow = new VMapWindow(
@@ -139,7 +159,10 @@ class TileCollectionWindow(
         tileCollection.paletteChunks,
         globalPalette,
         new DumbUpdater(globalPaletteWindow),
+        tileContainer,
+        zoomWindow,
         tileCollection.settings)
+    zoomWindow.getUpdaters.add(vMapWindow.updater)
 
     // initialize Palette Chunks window
     paletteChunksWindow = new PaletteChunksWindow(

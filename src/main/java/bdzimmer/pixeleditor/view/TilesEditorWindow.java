@@ -180,16 +180,16 @@ public class TilesEditorWindow extends CommonWindow {
     // show in zoom window
     // TODO: why this type safety warning?
     Container<Integer> dummyContainer = new SimpleContainer<Integer>(0);
-    
+
     if (zoomWindow == null || !zoomWindow.isVisible()) {
-      
+
       zoomWindow = new ZoomedTileWindow(
           "Zoom",
           tileset.tiles()[selectedIdx].bitmap(),
           dummyContainer,
           256,
-          paletteWindow,
-          new DumbUpdater(this));
+          paletteWindow);
+      zoomWindow.getUpdaters().add(new DumbUpdater(this));
       zoomWindow.setLocationRelativeTo(this);
     } else {
       zoomWindow.setTile(

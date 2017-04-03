@@ -12,6 +12,8 @@ import java.awt.Image
 import bdzimmer.pixeleditor.view.PaletteChunksWindow
 import bdzimmer.pixeleditor.controller.TileUtil
 
+import TileCollectionModel.NamedUtils
+
 case class Color(val r: Int, val g: Int, val b: Int)
 
 
@@ -66,7 +68,15 @@ object TileCollectionModel {
   case class Named[T](name: String, value: T)
 
 
+  implicit class NamedUtils[T](val x: T) extends AnyVal {
+    def named(s: String): Named[T] = {
+      Named(s, x)
+    }
+  }
+
+
   def emptyCollection(settings: Settings, tilesLength: Int): TileCollection = {
+
     val pal = TileUtil.colorArray(settings.paletteSize)
 
     val tiles = (0 until tilesLength).map(_ =>
@@ -78,9 +88,10 @@ object TileCollectionModel {
 
     val tc = TileCollection(settings, pixels, vMaps, chunks)
 
-    // some problems with the GUI without this for now
-    tc.vmaps += Named("Test", VMap(Buffer(), Array()))
-    tc.paletteChunks += Named("Test", TileUtil.colorArray(16))
+    tc.vmaps +=
+        VMap(Buffer(), Array.fill(settings.vMapSize)(new VMapEntry(0, 0, false, false, TileProperties(0)))) named "Test"
+
+    tc.paletteChunks += TileUtil.colorArray(16) named "Test"
 
     tc
 

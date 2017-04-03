@@ -21,7 +21,8 @@ class PixelsWindow(
     pixels: Pixels,
     settings: Settings,
     paletteWindow: PaletteWindow,
-    tileContainer: TileContainer) extends CommonWindow {
+    tileContainer: TileContainer,
+    zoomWindow: ZoomedTileWindow) extends CommonWindow {
 
   setTitle(title)
 
@@ -39,15 +40,6 @@ class PixelsWindow(
        handleClicks(event, true)
      }
   })
-
-  val zoomWindow = new ZoomedTileWindow(
-      "Zoom",
-      tileContainer.getTileBitmap, new SimpleContainer(0), settings.colorsPerTile,
-      paletteWindow, updater)
-  zoomWindow.setLocationRelativeTo(this)
-  zoomWindow.setDefaultCloseOperation(WindowConstants.HIDE_ON_CLOSE)
-  zoomWindow.setVisible(false)
-
 
   def rebuild(): Unit = {
     scrollPane.rebuild()
@@ -67,67 +59,58 @@ class PixelsWindow(
         (event.getY() / (settings.tileHeight * PixelsWindow.Scale)) * settings.viewTileCols +
         (event.getX() / (settings.tileWidth * PixelsWindow.Scale))
 
-
-    val selectedIdx = if (selectedIdxAny >= pixels.tiles.length) {
+    val pixelsIdx = if (selectedIdxAny >= pixels.tiles.length) {
       pixels.tiles.length - 1;
     } else {
       selectedIdxAny
     }
 
-
-    println("selected tile index: " + selectedIdx)
+    println("selected tile index: " + pixelsIdx)
 
     if (event.isMetaDown()) {
       // right click grab tile
-      selectTile(selectedIdx)
+      selectTile(pixelsIdx)
 
     } else  if (allowCopy) {
-
-      val newTile = selectedIdx;
 
       // TODO: use drag / drop functionality for this???
 
       // Calculate maximum size we can copy
-      // The global tile bitmap here seems kind of dumb, but it's there to allow
-      // copying tiles across tileset -- important functionality.
-
       val maxHeight = math.min(settings.tileHeight, tileContainer.getTileBitmap().length)
       val maxWidth  = math.min(settings.tileWidth,  tileContainer.getTileBitmap()(0).length)
-
       for (i <- 0 until maxHeight) {
         for (j <- 0 until maxWidth) {
-          pixels.tiles(newTile).bitmap(i)(j) = tileContainer.getTileBitmap()(i)(j)
+          pixels.tiles(pixelsIdx).bitmap(i)(j) = tileContainer.getTileBitmap()(i)(j)
         }
       }
-      pixels.defaultPalOffsets(newTile) = curPalOffset
+      pixels.defaultPalOffsets(pixelsIdx) = curPalOffset
 
+      tileContainer.setTileIndex(pixelsIdx)
+      tileContainer.setTileBitmap(pixels.tiles(pixelsIdx).bitmap)
 
-      // set the copy as the current tile
-      tileContainer.setTileIndex(selectedIdx)
-      tileContainer.setTileBitmap(pixels.tiles(selectedIdx).bitmap)
       updater.update()
 
     }
 
-    statusBar.update(0, 0, "" + selectedIdx);
+    statusBar.update(0, 0, "" + pixelsIdx);
 
   }
 
 
   // select a tile from the set into the tile container
   // and show it in the ZoomWindow
-  def selectTile(selectedIdx: Int): Unit = {
+  def selectTile(pixelsIdx: Int): Unit = {
 
     // set the current tile
-    tileContainer.setTileIndex(selectedIdx);
-    val bitmap = pixels.tiles(selectedIdx).bitmap
+    tileContainer.setTileIndex(pixelsIdx);
+    val bitmap = pixels.tiles(pixelsIdx).bitmap
     tileContainer.setTileBitmap(bitmap)
-    curPalOffset = pixels.defaultPalOffsets(selectedIdx)
+    curPalOffset = pixels.defaultPalOffsets(pixelsIdx)
 
     // show in zoom window
     zoomWindow.setTile(
         bitmap,
-        new ArrayContainer(pixels.defaultPalOffsets, selectedIdx),
+        new ArrayContainer(pixels.defaultPalOffsets, pixelsIdx),
         settings.colorsPerTile)
     zoomWindow.toFront()
     zoomWindow.setVisible(true)
@@ -212,6 +195,7 @@ class PixelsWindow(
           settings.tileWidth,
           settings.tileHeight,
           settings.viewTileCols)
+
       if (drawGrid) {
         TileUtil.drawGrid(
             indexedGraphics.getImage,
@@ -237,6 +221,8 @@ class PixelsWindow(
   }
 
 }
+
+
 
 object PixelsWindow {
   val Scale = 2

@@ -30,7 +30,7 @@ class PaletteChunksWindow(
   build(WindowConstants.HIDE_ON_CLOSE)
 
   pack()
-  setResizable(false)
+  setResizable(true)
 
   /////////////////////////////////////////
 

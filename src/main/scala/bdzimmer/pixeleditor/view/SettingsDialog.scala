@@ -7,7 +7,7 @@ import java.awt.{Dialog, GridLayout}                  // scalastyle:ignore illeg
 import java.awt.event.{ActionListener, ActionEvent}   // scalastyle:ignore illegal.imports
 import javax.swing.{JButton, JDialog, JComboBox, JLabel}
 
-import bdzimmer.pixeleditor.model.TileCollectionModel.Settings
+import bdzimmer.pixeleditor.model.TileCollectionModel.{Named, Settings}
 
 import bdzimmer.util.StringUtils._
 
@@ -17,7 +17,6 @@ object SettingsDialog {
   // TODO: many built in settings that are selectable
 
   val Default = Settings(5, 256, 16, 16, 16, 256, 16, 16)
-
 
   def selector(items: List[Int], default: Int): JComboBox[String] = {
     val sel = new JComboBox[String](items.map(_.toString).toArray)
