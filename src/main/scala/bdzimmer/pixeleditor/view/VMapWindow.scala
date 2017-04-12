@@ -83,7 +83,7 @@ class VMapWindow(
 
     val pixelsIdx = vMap.entries(vMapEntryIdx).pixelsIdx
 
-    println("selected entry index: " + vMapEntryIdx)
+    println(vMapEntryIdx + ": " + vMap.entries(vMapEntryIdx))
 
     if (event.isMetaDown()) {
 
@@ -123,6 +123,12 @@ class VMapWindow(
   }
 
 
+  def applyPalConf(): Unit = {
+    val palConf = vMap.palConfs(selectedPalConfIdx).value.chunkIdxs.map(i => paletteChunks(i).value)
+    PalUtil.applyPalConf(globalPalette, palConf)
+    globalPaletteUpdater.update()
+  }
+
   // TODO: really only the selector needs to be rebuilt
   def rebuildPalConfsPanel(): Unit = {
     palConfsPanel.removeAll()
@@ -131,13 +137,13 @@ class VMapWindow(
     val sel = new JComboBox(selItems)
     if (selectedPalConfIdx < selItems.length) {
       sel.setSelectedIndex(selectedPalConfIdx)
+      applyPalConf()
     }
+
     sel.addActionListener(new ActionListener {
       override def actionPerformed(ae: ActionEvent): Unit = {
         selectedPalConfIdx = ae.getSource.asInstanceOf[JComboBox[String]].getSelectedIndex
-        val palConf = vMap.palConfs(selectedPalConfIdx).value.chunkIdxs.map(i => paletteChunks(i).value)
-        PalUtil.applyPalConf(globalPalette, palConf)
-        globalPaletteUpdater.update()
+        applyPalConf()
       }
     })
     palConfsPanel.add(sel)
@@ -158,10 +164,11 @@ class VMapWindow(
     val add = new JButton("Add")
     add.addActionListener(new ActionListener {
       override def actionPerformed(ae: ActionEvent): Unit = {
-        val name = JOptionPane.showInputDialog(null, "Enter name:")
+        val name = JOptionPane.showInputDialog(null, "Enter name:", "Pal Conf " + vMap.palConfs.length)
         if (name != null && name.length > 0) {
           val conf = new Named[PaletteConf](name, PaletteConf(Buffer()))
           vMap.palConfs += conf
+          selectedPalConfIdx = vMap.palConfs.size - 1
           rebuildPalConfsPanel()
         }
       }
@@ -291,11 +298,6 @@ class VMapWindow(
 
 
     def update(): Unit = {
-      // TODO: actual implementation
-      println("updating VMap Editor - first 8 entries")
-      for (x <- entries.take(8)) {
-        println(x)
-      }
       draw()
       widget.repaint()
     }

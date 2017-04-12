@@ -6,7 +6,7 @@ package bdzimmer.pixeleditor.view
 import scala.collection.mutable.Buffer
 
 import java.awt.{BorderLayout}
-import java.awt.event.{ActionEvent, ActionListener, MouseAdapter, MouseEvent}
+import java.awt.event.{ActionEvent, ActionListener, MouseAdapter, MouseEvent, ItemEvent, ItemListener}
 import java.awt.image.BufferedImage
 import javax.swing.{JButton, JComboBox, JOptionPane, JPanel, JToolBar, JToggleButton, JSeparator, JComponent, JTextField, WindowConstants, SwingConstants}
 import javax.swing.event.{ChangeListener, ChangeEvent, DocumentListener, DocumentEvent}
@@ -40,12 +40,14 @@ class VMapEntryEditor(
 
     val offsetChoices = (0 to 16).map(x => x * settings.colorsPerTile).toList
     val palOffsetSelector = SettingsDialog.selector(offsetChoices, 0)
-    palOffsetSelector.addActionListener(new ActionListener() {
-      override def actionPerformed(e: ActionEvent) {
-        println("palOffset")
-        val palOffset = palOffsetSelector.getSelectedItem.asInstanceOf[String].toIntSafe(0)
-        entries(vMapEntryIdx) = entries(vMapEntryIdx).copy(palOffset = palOffset)
-        vMapWindowUpdater.update()
+    palOffsetSelector.addItemListener(new ItemListener() {
+      override def itemStateChanged(e: ItemEvent) {
+        if (palOffsetSelector.getSelectedIndex > -1) {
+          println("palOffset: " + offsetChoices(palOffsetSelector.getSelectedIndex))
+          val palOffset = offsetChoices(palOffsetSelector.getSelectedIndex)
+          entries(vMapEntryIdx) = entries(vMapEntryIdx).copy(palOffset = palOffset)
+          vMapWindowUpdater.update()
+        }
       }
     });
 

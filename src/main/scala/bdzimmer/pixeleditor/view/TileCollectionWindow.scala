@@ -303,6 +303,7 @@ class TileCollectionWindow(
 
     } else {
       jfc.setDialogType(JFileChooser.OPEN_DIALOG)
+      jfc.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY)
       jfc.showOpenDialog(null)
     }
 
