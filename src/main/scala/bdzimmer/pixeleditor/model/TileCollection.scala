@@ -57,7 +57,7 @@ object TileCollectionModel {
     palOffset: Int,
     flipX: Boolean,
     flipY: Boolean,
-    attribs: TileProperties
+    attribs: TileProperties // currently not used
   )
 
 

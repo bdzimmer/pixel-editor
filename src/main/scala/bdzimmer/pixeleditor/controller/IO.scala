@@ -8,10 +8,10 @@ import scala.util.Try
 import java.io.{File, FileReader, FileWriter, BufferedReader, BufferedWriter}
 
 import javax.xml.bind.DatatypeConverter
-import java.nio.ByteBuffer
+import java.nio.{ByteBuffer, ByteOrder}
 
 import bdzimmer.pixeleditor.model.TileCollectionModel._
-import bdzimmer.pixeleditor.model.{Color, Tile, Tileset}
+import bdzimmer.pixeleditor.model.{Color, Tile, Tileset, TileProperties}
 
 import bdzimmer.util.StringUtils._
 
@@ -20,9 +20,11 @@ object IO {
 
   val Trimmer = """^(.*?)\s*$""".r
 
+
   def getSetting(sm: Map[String, String], name: String, default: Int): Int = {
-      sm.get(name).map(_.toIntSafe(default)).getOrElse(default)
-    }
+    sm.get(name).map(_.toIntSafe(default)).getOrElse(default)
+  }
+
 
   def readSettings(file: File): Settings = {
 
@@ -40,7 +42,60 @@ object IO {
       viewPaletteCols = getSetting(sm, "viewPaletteCols", 16),
       viewTileCols    = getSetting(sm, "viewTileCols", 16)
     )
+  }
 
+
+  def writeSettings(file: File, settings: Settings): Unit = {
+
+     val bw = new BufferedWriter(new FileWriter(file))
+
+     val sm = Map(
+      "bitsPerChannel"  -> settings.bitsPerChannel.toString,
+      "paletteSize"     -> settings.paletteSize.toString,
+      "colorsPerTile"   -> settings.colorsPerTile.toString,
+      "tileWidth"       -> settings.tileWidth.toString,
+      "tileHeight"      -> settings.tileHeight.toString,
+      "vMapSize"        -> settings.vMapSize.toString,
+      "viewPaletteCols" -> settings.viewPaletteCols.toString,
+      "viewTileCols"    -> settings.viewTileCols.toString
+     )
+
+     writeMap(bw, sm)
+
+     bw.close()
+  }
+
+
+  def readPaletteChunks(file: File): Buffer[Named[Array[Color]]] = {
+
+    val br = new BufferedReader(new FileReader(file))
+    val sm = readMap(br)
+    val count = getSetting(sm, "count", 0)
+    val chunks = (0 until count).map(i => {
+      val name = br.readLine()
+      val pal = base64ToInt(br.readLine())
+      pal.grouped(3).map(x => Color(x(0), x(1), x(2))).toArray named name
+    }).toBuffer
+    br.close()
+
+    chunks
+  }
+
+
+  def writePaletteChunks(file: File, chunks: Buffer[Named[Array[Color]]]): Unit = {
+
+    val bw = new BufferedWriter(new FileWriter(file))
+
+    writeMap(bw, Map("count" -> chunks.length.toString))
+    chunks.foreach(chunk => {
+      bw.write(chunk.name)
+      bw.newLine()
+      val pal = chunk.value.flatMap(color => List(color.r, color.g, color.b)).toArray
+      bw.write(intToBase64(pal))
+      bw.newLine()
+    })
+
+    bw.close()
   }
 
 
@@ -65,54 +120,6 @@ object IO {
   }
 
 
-  def readVMaps(file: File, settings: Settings): Buffer[Named[VMap]] = {
-    // TODO: implement readVMaps
-    return Buffer()
-  }
-
-
-  def readPaletteChunks(file: File): Buffer[Named[Array[Color]]] = {
-
-    val br = new BufferedReader(new FileReader(file))
-    val sm = readMap(br)
-    val count = getSetting(sm, "count", 0)
-    val chunks = (0 until count).map(i => {
-      val name = br.readLine()
-      val pal = base64ToInt(br.readLine())
-      Named(
-        name,
-        pal.grouped(3).map(x => Color(x(0), x(1), x(2))).toArray
-      )
-    }).toBuffer
-    br.close()
-
-    chunks
-  }
-
-  //////
-
-
-  def writeSettings(file: File, settings: Settings): Unit = {
-
-     val bw = new BufferedWriter(new FileWriter(file))
-
-     val sm = Map(
-      "bitsPerChannel"  -> settings.bitsPerChannel.toString,
-      "paletteSize"     -> settings.paletteSize.toString,
-      "colorsPerTile"   -> settings.colorsPerTile.toString,
-      "tileWidth"       -> settings.tileWidth.toString,
-      "tileHeight"      -> settings.tileHeight.toString,
-      "vMapSize"        -> settings.vMapSize.toString,
-      "viewPaletteCols" -> settings.viewPaletteCols.toString,
-      "viewTileCols"    -> settings.viewTileCols.toString
-     )
-
-     writeMap(bw, sm)
-
-     bw.close()
-
-  }
-
   def writePixels(file: File, pixels: Pixels, settings: Settings): Unit = {
 
     val bw = new BufferedWriter(new FileWriter(file))
@@ -132,68 +139,79 @@ object IO {
   }
 
 
+  def readVMaps(file: File, settings: Settings): Buffer[Named[VMap]] = {
+    val br = new BufferedReader(new FileReader(file))
+    val count = getSetting(readMap(br), "count", 0)
+    val vmaps = (0 until count).map(i => {
+      val name = br.readLine()
+      val vmap = readVMap(br, settings.vMapSize)
+      vmap named name
+    }).toBuffer
+    br.close()
+
+    // val vmaps: Buffer[Named[VMap]] = Buffer()
+    // vmaps +=
+    //    VMap(Buffer(), Array.fill(settings.vMapSize)(new VMapEntry(0, 0, false, false, TileProperties(0)))) named "Test"
+
+    return vmaps
+  }
+
+
+  def readVMap(br: BufferedReader, vMapSize: Int): VMap = {
+
+    val countConfs = getSetting(readMap(br), "count", 0)
+    val confs = (0 until countConfs).map(i => {
+      val name = br.readLine()
+      val chunkIdxs = br.readLine().split(", ").map(_.toIntSafe(0)).toBuffer
+      PaletteConf(chunkIdxs) named name
+    }).toBuffer
+
+    val entries = (0 until vMapSize).map(i => {
+      val sm = readMap(br)
+      VMapEntry(
+        pixelsIdx = getSetting(sm, "pixelsIdx", 0),
+        palOffset = getSetting(sm, "palOffset", 0),
+        flipX     = sm.getOrElse("flipX", "false").equals("true"),
+        flipY     = sm.getOrElse("flipY", "false").equals("true"),
+        attribs   = TileProperties(0)
+      )
+    }).toArray
+
+    VMap(confs, entries)
+
+  }
+
+
   def writeVMaps(file: File, vMaps: Buffer[Named[VMap]], settings: Settings): Unit = {
-    // TODO: implement writeVMaps
-  }
-
-
-  def writePaletteChunks(file: File, chunks: Buffer[Named[Array[Color]]]): Unit = {
-
     val bw = new BufferedWriter(new FileWriter(file))
-
-    writeMap(bw, Map("count" -> chunks.length.toString))
-    chunks.foreach(chunk => {
-      bw.write(chunk.name)
+    writeMap(bw, Map("count" -> vMaps.length.toString))
+    for (vmap <- vMaps) {
+      bw.write(vmap.name)
       bw.newLine()
-      val pal = chunk.value.flatMap(color => List(color.r, color.g, color.b)).toArray
-      bw.write(intToBase64(pal))
-      bw.newLine()
-    })
-
+      writeVMap(bw, vmap.value)
+    }
     bw.close()
-
   }
 
 
-  private def base64ToInt(b64: String): Array[Int] = {
-    val bb = DatatypeConverter.parseBase64Binary(b64)
-    ByteBuffer.wrap(bb).asIntBuffer.array
-  }
-
-
-  private def intToBase64(ia: Array[Int]): String = {
-    val bb = ByteBuffer.allocate(ia.length * 4)
-    bb.asIntBuffer.put(ia)
-    DatatypeConverter.printBase64Binary(bb.array)
-  }
-
-
-  private def base64ToTile(b64: String, tileWidth: Int, tileHeight: Int): Tile = {
-
-    val ia = base64ToInt(b64)
-    val tile = Tileset.emptyTile(tileWidth, tileHeight)
-    for (row <- 0 until tileHeight) {
-      for (col <- 0 until tileWidth) {
-        tile.bitmap(row)(col) = ia(row * tileWidth + col)
-      }
+  def writeVMap(bw: BufferedWriter, vmap: VMap): Unit = {
+    writeMap(bw, Map("count" -> vmap.palConfs.length.toString))
+    for (conf <- vmap.palConfs) {
+      bw.write(conf.name)
+      bw.newLine()
+      bw.write(conf.value.chunkIdxs.mkString(", "))
+      bw.newLine()
     }
 
-    tile
-  }
-
-
-  private def tileToBase64(tile: Tile, tileWidth: Int, tileHeight: Int): String = {
-
-    val length = tileWidth * tileHeight
-    val ia = new Array[Int](length)
-    for (row <- 0 until tileHeight) {
-      for (col <- 0 until tileWidth) {
-        ia(row * tileWidth + col) = tile.bitmap(row)(col)
-      }
+    writeMap(bw, Map("count" -> vmap.entries.length.toString))
+    for (entry <- vmap.entries) {
+      val entryMap = Map(
+        "pixelsIdx" -> entry.pixelsIdx.toString,
+        "palOffset" -> entry.palOffset.toString,
+        "flipX"     -> entry.flipX.toString,
+        "flipY"     -> entry.flipY.toString)
+      writeMap(bw, entryMap)
     }
-
-    intToBase64(ia)
-
   }
 
 
@@ -240,6 +258,52 @@ object IO {
       bw.newLine()
     }})
     bw.newLine()
+  }
+
+
+  private def base64ToInt(b64: String): Array[Int] = {
+    val bb = DatatypeConverter.parseBase64Binary(b64)
+    // ByteBuffer.wrap(bb).asIntBuffer.array
+    val ib = ByteBuffer.wrap(bb).order(ByteOrder.BIG_ENDIAN).asIntBuffer
+    val ai = new Array[Int](ib.remaining)
+    ib.get(ai)
+    ai
+  }
+
+
+  private def intToBase64(ia: Array[Int]): String = {
+    val bb = ByteBuffer.allocate(ia.length * 4)
+    bb.asIntBuffer.put(ia)
+    DatatypeConverter.printBase64Binary(bb.array)
+  }
+
+
+  private def base64ToTile(b64: String, tileWidth: Int, tileHeight: Int): Tile = {
+
+    val ia = base64ToInt(b64)
+    val tile = Tileset.emptyTile(tileWidth, tileHeight)
+    for (row <- 0 until tileHeight) {
+      for (col <- 0 until tileWidth) {
+        tile.bitmap(row)(col) = ia(row * tileWidth + col)
+      }
+    }
+
+    tile
+  }
+
+
+  private def tileToBase64(tile: Tile, tileWidth: Int, tileHeight: Int): String = {
+
+    val length = tileWidth * tileHeight
+    val ia = new Array[Int](length)
+    for (row <- 0 until tileHeight) {
+      for (col <- 0 until tileWidth) {
+        ia(row * tileWidth + col) = tile.bitmap(row)(col)
+      }
+    }
+
+    intToBase64(ia)
+
   }
 
 

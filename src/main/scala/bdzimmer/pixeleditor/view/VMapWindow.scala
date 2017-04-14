@@ -75,7 +75,9 @@ class VMapWindow(
         (event.getY() / (settings.tileHeight * VMapWindow.Scale)) * settings.viewTileCols +
         (event.getX() / (settings.tileWidth * VMapWindow.Scale))
 
-    val vMapEntryIdx = if (selectedIdxAny >= pixels.tiles.length) {
+    val prevVMapEntryIdx = vMapEntryIdx
+
+    vMapEntryIdx = if (selectedIdxAny >= pixels.tiles.length) {
       pixels.tiles.length - 1;
     } else {
       selectedIdxAny
@@ -86,18 +88,14 @@ class VMapWindow(
     println(vMapEntryIdx + ": " + vMap.entries(vMapEntryIdx))
 
     if (event.isMetaDown()) {
-
       selectTile(pixelsIdx)
       editor.selectEntry(vMapEntryIdx)
-
     } else  if (allowCopy) {
-
-      // TODO: vMapEntry copy functionality
+      vMap.entries(vMapEntryIdx) = vMap.entries(prevVMapEntryIdx).copy()
       updater.update()
-
     }
 
-    statusBar.update(0, 0, "" + vMapEntryIdx);
+    statusBar.update(0, 0, "" + vMapEntryIdx)
 
   }
 
@@ -161,6 +159,25 @@ class VMapWindow(
     })
     palConfsPanel.add(edit)
 
+     val rename = new JButton("Rename")
+    rename.addActionListener(new ActionListener() {
+      def actionPerformed(event: ActionEvent): Unit = {
+
+        if (selectedPalConfIdx < vMap.palConfs.length) {
+          val conf = vMap.palConfs(selectedPalConfIdx)
+          val newName = JOptionPane.showInputDialog(null, "Enter a new name:", conf.name)
+          if (newName != null && newName.length > 0) {
+            vMap.palConfs(selectedPalConfIdx) = conf.value named newName
+            applyPalConf()
+            rebuildPalConfsPanel()
+          }
+        }
+      }
+    })
+    rename.setFocusable(false)
+    palConfsPanel.add(rename)
+
+
     val add = new JButton("Add")
     add.addActionListener(new ActionListener {
       override def actionPerformed(ae: ActionEvent): Unit = {
@@ -169,6 +186,7 @@ class VMapWindow(
           val conf = new Named[PaletteConf](name, PaletteConf(Buffer()))
           vMap.palConfs += conf
           selectedPalConfIdx = vMap.palConfs.size - 1
+          applyPalConf()
           rebuildPalConfsPanel()
         }
       }
@@ -264,7 +282,7 @@ class VMapWindow(
     val widget = new ImageWidget("", indexedGraphics.getImage, List(), 0, 0)
 
     def draw(): Unit = {
-      println("PixelsUpdater draw")
+      println("VMapTilesUpdater draw")
       indexedGraphics.updateClut()
 
       // TODO: x and y flips

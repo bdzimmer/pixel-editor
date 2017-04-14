@@ -7,7 +7,7 @@ package bdzimmer.pixeleditor.view
 import java.io.{File, FileReader, FileWriter, BufferedReader, BufferedWriter}
 
 import java.awt.GridLayout
-import java.awt.event.{ActionListener, ActionEvent, FocusAdapter, FocusEvent}
+import java.awt.event.{ActionListener, ActionEvent, FocusAdapter, FocusEvent, WindowAdapter, WindowEvent}
 import javax.swing.{JFileChooser, JButton, JMenuBar, JMenu, JMenuItem, JPanel, WindowConstants}
 
 import scala.collection.mutable.Buffer
@@ -17,6 +17,7 @@ import bdzimmer.pixeleditor.model.{Color, TileContainer, TileCollectionModel}
 import bdzimmer.pixeleditor.controller.IO
 
 import bdzimmer.util.StringUtils._
+import bdzimmer.util.PropertiesWrapper
 
 
 // TODO: this probably belongs in IO or somewhere similar
@@ -38,8 +39,6 @@ class TileCollectionWindow(
 
   val tileContainer = new TileContainer
 
-  // initialize global palette windo
-
   var globalPalette: Array[Color] = null
 
   var globalPaletteWindow: PaletteWindow = null
@@ -48,24 +47,37 @@ class TileCollectionWindow(
   var vMapWindow: VMapWindow = null
   var zoomWindow: ZoomedTileWindow = null
 
+  /// load window locations and initialize
+
+  val wlocsFilename = "windowlocations.properties"
+  val wlocs = new PropertiesWrapper(wlocsFilename)
+
+  this.setLocation(
+        wlocs("tilecollection.x").map(_.toIntSafe(0)).getOrElse(0),
+        wlocs("tilecollection.y").map(_.toIntSafe(0)).getOrElse(0))
+
   initWindows()
+
+  addWindowListener(new WindowAdapter() {
+    override def windowClosing(e: WindowEvent) {
+      saveWindowLocations()
+    }
+  })
 
   ////
 
   build(WindowConstants.EXIT_ON_CLOSE)
   packAndShow(false)
 
+
   //////
 
 
   def newCollection(): Unit = {
-
+    saveWindowLocations()
     val settings = SettingsDialog.getSettings()
-
     tileCollection = TileCollectionModel.emptyCollection(settings, 1024)
-
     initWindows()
-
   }
 
 
@@ -78,6 +90,8 @@ class TileCollectionWindow(
     val vMaps = IO.readVMaps(tcf.vMapsFile, settings)
     val paletteChunks = IO.readPaletteChunks(tcf.paletteChunksFile)
 
+    println(paletteChunks)
+
     tileCollection = new TileCollection(
       settings,
       pixels,
@@ -85,20 +99,18 @@ class TileCollectionWindow(
       paletteChunks
     )
 
+    initWindows()
   }
 
 
   def writeCollection(filename: String): Unit = {
-
     val tcf = TileCollectionFiles(filename)
-
     new File(filename).mkdirs()
 
     IO.writeSettings(tcf.settingsFile, tileCollection.settings)
     IO.writePixels(tcf.pixelsFile, tileCollection.pixels, tileCollection.settings)
     IO.writeVMaps(tcf.vMapsFile, tileCollection.vmaps, tileCollection.settings)
     IO.writePaletteChunks(tcf.paletteChunksFile, tileCollection.paletteChunks)
-
   }
 
 
@@ -115,15 +127,6 @@ class TileCollectionWindow(
       }
     })
 
-    /*
-    val reds =   (0 until 8).map(x => Color(x * 2, 0,     0))
-    val greens = (0 until 8).map(x => Color(0,     x * 2, 0))
-    val blues =  (0 until 8).map(x => Color(0,     0,     x * 2))
-    val globalPalette = (reds ++ greens ++ blues ++ greens ++ (32 until 256).map(_ => Color(0, 0, 0))).toArray
-    */
-
-
-
     globalPalette = (0 until tileCollection.settings.paletteSize).map(_ => Color(0, 0, 0)).toArray
 
     globalPaletteWindow = new PaletteWindow(
@@ -139,7 +142,6 @@ class TileCollectionWindow(
     zoomWindow.setDefaultCloseOperation(WindowConstants.HIDE_ON_CLOSE)
     zoomWindow.setVisible(false)
 
-
     // initialize Pixels window
     pixelsWindow = new PixelsWindow(
         "Pixels",
@@ -148,7 +150,6 @@ class TileCollectionWindow(
         globalPaletteWindow,
         tileContainer,
         zoomWindow)
-    pixelsWindow.setLocationRelativeTo(null)
     zoomWindow.getUpdaters.add(pixelsWindow.updater)
 
     // intiialize VMap window
@@ -169,7 +170,71 @@ class TileCollectionWindow(
         "Palette Chunks",
         tileCollection.paletteChunks,
         tileCollection.settings)
-    paletteChunksWindow.setLocationRelativeTo(null)
+
+    loadWindowLocations()
+
+    globalPaletteWindow.setVisible(true)
+    pixelsWindow.setVisible(true)
+    vMapWindow.setVisible(true)
+    paletteChunksWindow.setVisible(true)
+
+  }
+
+
+  def saveWindowLocations(): Unit = {
+
+    wlocs.set("globalpalette.x", globalPaletteWindow.getLocation.getX.toInt.toString)
+    wlocs.set("globalpalette.y", globalPaletteWindow.getLocation.getY.toInt.toString)
+
+    wlocs.set("zoom.x", zoomWindow.getLocation.getX.toInt.toString)
+    wlocs.set("zoom.y", zoomWindow.getLocation.getY.toInt.toString)
+
+    wlocs.set("pixels.x", pixelsWindow.getLocation.getX.toInt.toString)
+    wlocs.set("pixels.y", pixelsWindow.getLocation.getY.toInt.toString)
+
+    wlocs.set("vmap.x", vMapWindow.getLocation.getX.toInt.toString)
+    wlocs.set("vmap.y", vMapWindow.getLocation.getY.toInt.toString)
+
+    wlocs.set("palettechunks.x", paletteChunksWindow.getLocation.getX.toInt.toString)
+    wlocs.set("palettechunks.y", paletteChunksWindow.getLocation.getY.toInt.toString)
+
+    wlocs.set("palettechunks.dx", paletteChunksWindow.getSize.getWidth.toInt.toString)
+    wlocs.set("palettechunks.dy", paletteChunksWindow.getSize.getHeight.toInt.toString)
+
+    wlocs.set("tilecollection.x", this.getLocation.getX.toInt.toString)
+    wlocs.set("tilecollection.y", this.getLocation.getY.toInt.toString)
+
+    wlocs.prop.store(
+        new java.io.FileOutputStream(wlocsFilename),
+        "created by PixelEditor")
+  }
+
+
+  def loadWindowLocations(): Unit = {
+
+     globalPaletteWindow.setLocation(
+        wlocs("globalpalette.x").map(_.toIntSafe(0)).getOrElse(0),
+        wlocs("globalpalette.y").map(_.toIntSafe(0)).getOrElse(0))
+
+    zoomWindow.setLocation(
+        wlocs("zoom.x").map(_.toIntSafe(0)).getOrElse(0),
+        wlocs("zoom.y").map(_.toIntSafe(0)).getOrElse(0))
+
+    pixelsWindow.setLocation(
+        wlocs("pixels.x").map(_.toIntSafe(0)).getOrElse(0),
+        wlocs("pixels.y").map(_.toIntSafe(0)).getOrElse(0))
+
+    vMapWindow.setLocation(
+        wlocs("vmap.x").map(_.toIntSafe(0)).getOrElse(0),
+        wlocs("vmap.y").map(_.toIntSafe(0)).getOrElse(0))
+
+    paletteChunksWindow.setLocation(
+        wlocs("palettechunks.x").map(_.toIntSafe(0)).getOrElse(0),
+        wlocs("palettechunks.y").map(_.toIntSafe(0)).getOrElse(0))
+
+    paletteChunksWindow.setSize(
+        wlocs("palettechunks.dx").map(_.toIntSafe(0)).getOrElse(480),
+        wlocs("palettechunks.dy").map(_.toIntSafe(0)).getOrElse(320))
 
   }
 
@@ -224,12 +289,22 @@ class TileCollectionWindow(
       }
     })
 
+    val jmExit = new JMenuItem("Exit")
+    jmExit.addActionListener(new ActionListener() {
+      def actionPerformed(ae: ActionEvent) {
+        saveWindowLocations()
+        sys.exit()
+      }
+    })
+
     fileMenu.add(jmNew)
     fileMenu.add(jmOpen)
     fileMenu.add(jmReload)
     fileMenu.addSeparator()
     fileMenu.add(jmSave)
     fileMenu.add(jmSaveAs)
+    fileMenu.addSeparator()
+    fileMenu.add(jmExit)
     mainMenu.add(fileMenu)
 
     return mainMenu

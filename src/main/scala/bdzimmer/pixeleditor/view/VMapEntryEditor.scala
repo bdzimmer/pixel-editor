@@ -64,7 +64,7 @@ class VMapEntryEditor(
     flipXButton.addChangeListener(new ChangeListener() {
       override def stateChanged(e: ChangeEvent) {
         println("flip y")
-        entries(vMapEntryIdx) = entries(vMapEntryIdx).copy(flipY = flipXButton.isSelected)
+        entries(vMapEntryIdx) = entries(vMapEntryIdx).copy(flipY = flipYButton.isSelected)
         vMapWindowUpdater.update()
       }
     });
@@ -74,6 +74,7 @@ class VMapEntryEditor(
     def selectEntry(vMapEntryIdx: Int): Unit = {
       this.vMapEntryIdx = vMapEntryIdx
       val entry = entries(this.vMapEntryIdx)
+      println("selected vmap entry: " + entry)
 
       pixelsIdxField.setText(entry.pixelsIdx.toString)
       palOffsetSelector.setSelectedItem(entry.palOffset)
