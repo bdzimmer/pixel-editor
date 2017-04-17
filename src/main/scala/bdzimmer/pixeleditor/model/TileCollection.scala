@@ -67,7 +67,6 @@ object TileCollectionModel {
 
   case class Named[T](name: String, value: T)
 
-
   implicit class NamedUtils[T](val x: T) extends AnyVal {
     def named(s: String): Named[T] = {
       Named(s, x)
