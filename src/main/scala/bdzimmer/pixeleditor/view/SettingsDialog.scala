@@ -14,7 +14,7 @@ import bdzimmer.util.StringUtils._
 
 object SettingsDialog {
 
-  // TODO: many built in named settings that are selectable
+  // TODO: some of these cause errors due to assumptions elsewhere
 
   val Defaults = List(
     Settings(5, 16,  16, 16, 16, 256, 16, 16) named "EGA",

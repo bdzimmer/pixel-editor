@@ -88,9 +88,9 @@ object TileCollectionModel {
     val tc = TileCollection(settings, pixels, vMaps, chunks)
 
     tc.vmaps +=
-        VMap(Buffer(), Array.fill(settings.vMapSize)(new VMapEntry(0, 0, false, false, TileProperties(0)))) named "Test"
+        VMap(Buffer(), Array.fill(settings.vMapSize)(new VMapEntry(0, 0, false, false, TileProperties(0)))) named "VMap 0"
 
-    tc.paletteChunks += TileUtil.colorArray(16) named "Test"
+    tc.paletteChunks += TileUtil.colorArray(16) named "Pal Chunk 0"
 
     tc
 

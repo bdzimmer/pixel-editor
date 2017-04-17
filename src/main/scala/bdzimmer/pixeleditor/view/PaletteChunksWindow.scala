@@ -109,18 +109,17 @@ class PaletteChunksWindow(
     rename.setFocusable(false)
     mainToolbar.add(rename)
 
-    // TODO: add a new palette chunk
     val add = new JButton("Add")
     add.addActionListener(new ActionListener() {
       def actionPerformed(event: ActionEvent): Unit = {
 
-        val name = new JTextField("New Palette Chunk")
+        val name = new JTextField("Pal Chunk " + chunks.length)
 
         val maxMultiple = settings.paletteSize / settings.colorsPerTile
         val size = new JComboBox((1 to maxMultiple).map(x => (x * settings.colorsPerTile).toString).toArray)
 
         val option = JOptionPane.showConfirmDialog(
-            null, Array("Name:", name, "Size:", size), "Add Chunk", JOptionPane.OK_CANCEL_OPTION)
+            null, Array("Name:", name, "Size:", size), "Add Palette Chunk", JOptionPane.OK_CANCEL_OPTION)
 
         if (option == JOptionPane.OK_OPTION) {
           val newChunk = Named(
