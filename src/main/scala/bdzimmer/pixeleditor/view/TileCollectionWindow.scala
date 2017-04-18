@@ -44,7 +44,8 @@ class TileCollectionWindow(
   var globalPaletteWindow: PaletteWindow = null
   var paletteChunksWindow: PaletteChunksWindow = null
   var pixelsWindow: PixelsWindow = null
-  var vMapWindow: VMapWindow = null
+  // var vMapWindow: VMapWindow = null
+  var vMapsWindow: VMapsWindow = null
   var zoomWindow: ZoomedTileWindow = null
 
   /// load window locations and initialize
@@ -82,6 +83,8 @@ class TileCollectionWindow(
 
 
   def readCollection(filename: String): Unit = {
+
+    saveWindowLocations()
 
     val tcf = TileCollectionFiles(filename)
 
@@ -121,7 +124,7 @@ class TileCollectionWindow(
 
   def initWindows(): Unit = {
 
-    List(globalPaletteWindow, pixelsWindow, vMapWindow, paletteChunksWindow, zoomWindow).foreach(x => {
+    List(globalPaletteWindow, pixelsWindow, vMapsWindow, paletteChunksWindow, zoomWindow).foreach(x => {
       if (x != null) {
         x.dispose()
       }
@@ -153,6 +156,7 @@ class TileCollectionWindow(
     zoomWindow.getUpdaters.add(pixelsWindow.updater)
 
     // intiialize VMap window
+    /*
     vMapWindow = new VMapWindow(
         "VMap - " + tileCollection.vmaps(0).name,
         tileCollection.vmaps(0).value,
@@ -164,6 +168,22 @@ class TileCollectionWindow(
         zoomWindow,
         tileCollection.settings)
     zoomWindow.getUpdaters.add(vMapWindow.updater)
+    *
+    */
+
+    vMapsWindow = new VMapsWindow(
+      "VMaps",
+      tileCollection.vmaps,
+      tileCollection.pixels,
+      tileCollection.paletteChunks,
+      globalPalette,
+      new DumbUpdater(globalPaletteWindow),
+      tileContainer,
+      zoomWindow,
+      tileCollection.settings)
+
+    // TODO: figure out how to connect zoomWindow to vMapsWindow and vMapWindow
+    // zoomWindow.getUpdaters.add(vMapsWindow.updater)
 
     // initialize Palette Chunks window
     paletteChunksWindow = new PaletteChunksWindow(
@@ -175,7 +195,7 @@ class TileCollectionWindow(
 
     globalPaletteWindow.setVisible(true)
     pixelsWindow.setVisible(true)
-    vMapWindow.setVisible(true)
+    vMapsWindow.setVisible(true)
     paletteChunksWindow.setVisible(true)
 
   }
@@ -192,8 +212,8 @@ class TileCollectionWindow(
     wlocs.set("pixels.x", pixelsWindow.getLocation.getX.toInt.toString)
     wlocs.set("pixels.y", pixelsWindow.getLocation.getY.toInt.toString)
 
-    wlocs.set("vmap.x", vMapWindow.getLocation.getX.toInt.toString)
-    wlocs.set("vmap.y", vMapWindow.getLocation.getY.toInt.toString)
+    wlocs.set("vmaps.x", vMapsWindow.getLocation.getX.toInt.toString)
+    wlocs.set("vmaps.y", vMapsWindow.getLocation.getY.toInt.toString)
 
     wlocs.set("palettechunks.x", paletteChunksWindow.getLocation.getX.toInt.toString)
     wlocs.set("palettechunks.y", paletteChunksWindow.getLocation.getY.toInt.toString)
@@ -224,9 +244,9 @@ class TileCollectionWindow(
         wlocs("pixels.x").map(_.toIntSafe(0)).getOrElse(0),
         wlocs("pixels.y").map(_.toIntSafe(0)).getOrElse(0))
 
-    vMapWindow.setLocation(
-        wlocs("vmap.x").map(_.toIntSafe(0)).getOrElse(0),
-        wlocs("vmap.y").map(_.toIntSafe(0)).getOrElse(0))
+    vMapsWindow.setLocation(
+        wlocs("vmaps.x").map(_.toIntSafe(0)).getOrElse(0),
+        wlocs("vmaps.y").map(_.toIntSafe(0)).getOrElse(0))
 
     paletteChunksWindow.setLocation(
         wlocs("palettechunks.x").map(_.toIntSafe(0)).getOrElse(0),
@@ -344,11 +364,11 @@ class TileCollectionWindow(
     panel.add(pixelsButton)
 
     // TODO: just for testing
-    val vMapButton = new JButton("VMap")
+    val vMapButton = new JButton("VMaps")
     vMapButton.addActionListener(new ActionListener() {
       def actionPerformed(ae: ActionEvent): Unit = {
-        val isVisible = vMapWindow.isVisible
-        vMapWindow.setVisible(!isVisible)
+        val isVisible = vMapsWindow.isVisible
+        vMapsWindow.setVisible(!isVisible)
       }
     })
     panel.add(vMapButton)
@@ -381,7 +401,6 @@ class TileCollectionWindow(
       jfc.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY)
       jfc.showOpenDialog(null)
     }
-
 
     if (res == JFileChooser.APPROVE_OPTION) {
       val inputFile = jfc.getSelectedFile()

@@ -38,7 +38,7 @@ class VMapWindow(
   var curPalOffset = 0
 
   val rows = (vMap.entries.length + settings.viewTileCols - 1) / settings.viewTileCols;
-  val updater = new VMapTilesUpdater(vMap.entries, pixels.tiles, settings)
+  val updater = new VMapTilesUpdater()
   val scrollPane = new WidgetScroller(Buffer(updater.widget), selectable = false)
 
   val palConfsPanel = new JPanel()
@@ -260,60 +260,18 @@ class VMapWindow(
 
   ///////
 
-  // TODO: a lot of this is duplicate code with the PixelsTilesUpdater
 
-  class VMapTilesUpdater(
-      entries: Array[VMapEntry],
-      tiles: Array[Tile],
-      settings: Settings) extends WidgetUpdater {
+  class VMapTilesUpdater() extends WidgetUpdater {
 
-    val rows = (tiles.length + settings.viewTileCols - 1) / settings.viewTileCols
-
-    val indexedGraphics = new IndexedGraphics(
-        globalPalette,
-        settings.bitsPerChannel,
-        rows * settings.tileHeight,
-        settings.viewTileCols * settings.tileWidth,
-        VMapWindow.Scale)
-
-    indexedGraphics.setGridDimensions(settings.tileHeight, settings.tileWidth)
+    val image = new TilesetImage(vMap.entries, pixels.tiles, globalPalette, VMapWindow.Scale, settings)
 
     draw()
-    val widget = new ImageWidget("", indexedGraphics.getImage, List(), 0, 0)
+    val widget = new ImageWidget("", image.indexedGraphics.getImage, List(), 0, 0)
 
     def draw(): Unit = {
       println("VMapTilesUpdater draw")
-      indexedGraphics.updateClut()
-
-      // TODO: x and y flips
-      val tiles = vMap.entries.map(x => pixels.tiles(x.pixelsIdx))
-      val palOffsets = vMap.entries.map(x => new Integer(x.palOffset))
-
-      TileUtil.drawTileset(
-          indexedGraphics,
-          tiles,
-          palOffsets,
-          settings.tileWidth,
-          settings.tileHeight,
-          settings.viewTileCols)
-
-      if (drawGrid) {
-        TileUtil.drawGrid(
-            indexedGraphics.getImage,
-            settings.tileWidth  * VMapWindow.Scale,
-            settings.tileHeight * VMapWindow.Scale)
-      }
-
-      if (drawTileNumbers) {
-        TileUtil.drawNumbers(
-            indexedGraphics.getImage, vMap.entries.size,
-            settings.viewTileCols, rows,
-            settings.tileWidth * VMapWindow.Scale,
-            settings.tileHeight * VMapWindow.Scale)
-      }
-
+      image.draw(drawGrid, drawTileNumbers)
     }
-
 
     def update(): Unit = {
       draw()
@@ -324,6 +282,67 @@ class VMapWindow(
 
 }
 
+
+
 object VMapWindow {
   val Scale = 2
+}
+
+
+
+// TODO: PixelsTilesUpdater should use this
+
+// TODO: optionally show name
+
+class TilesetImage(
+    entries: Array[VMapEntry],
+    tiles: Array[Tile],
+    globalPalette: Array[Color],
+    scale: Int,
+    settings: Settings) {
+
+  val rows = (entries.length + settings.viewTileCols - 1) / settings.viewTileCols
+
+  val indexedGraphics = new IndexedGraphics(
+      globalPalette,
+      settings.bitsPerChannel,
+      rows * settings.tileHeight,
+      settings.viewTileCols * settings.tileWidth,
+      scale)
+
+  indexedGraphics.setGridDimensions(settings.tileHeight, settings.tileWidth)
+
+  draw(false, false)
+
+  def draw(drawGrid: Boolean, drawTileNumbers: Boolean): Unit = {
+    indexedGraphics.updateClut()
+
+    // TODO: x and y flips
+    val entryTiles = entries.map(x => tiles(x.pixelsIdx))
+    val palOffsets = entries.map(x => new Integer(x.palOffset))
+
+    TileUtil.drawTileset(
+        indexedGraphics,
+        entryTiles,
+        palOffsets,
+        settings.tileWidth,
+        settings.tileHeight,
+        settings.viewTileCols)
+
+    if (drawGrid) {
+      TileUtil.drawGrid(
+          indexedGraphics.getImage,
+          settings.tileWidth  * scale,
+          settings.tileHeight * scale)
+    }
+
+    if (drawTileNumbers) {
+      TileUtil.drawNumbers(
+          indexedGraphics.getImage, entries.size,
+          settings.viewTileCols, rows,
+          settings.tileWidth * scale,
+          settings.tileHeight * scale)
+    }
+  }
+
 }

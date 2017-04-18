@@ -4,9 +4,7 @@ package bdzimmer.pixeleditor.view
 
 import scala.collection.mutable.Buffer
 
-import java.awt.event.{ActionEvent, ActionListener, FocusAdapter, FocusEvent, MouseAdapter, MouseEvent}
-import java.awt.{GridLayout, BorderLayout, Dimension}
-import javax.swing.{JButton, JComboBox, JPanel, JOptionPane, JTextField, JToolBar, WindowConstants}
+import javax.swing.{JTextField, JComboBox, JOptionPane}
 
 import bdzimmer.pixeleditor.model.TileCollectionModel._
 import bdzimmer.pixeleditor.model.Color
@@ -14,136 +12,43 @@ import bdzimmer.pixeleditor.controller.TileUtil
 
 
 
-class PaletteChunksWindow(
+class PaletteChunksWindow (
     title: String,
-    val chunks: Buffer[Named[Array[Color]]],
-    settings: Settings) extends CommonWindow {
+    items: Buffer[Named[Array[Color]]],
+    settings: Settings)
+  extends BufferNamedWindow[Array[Color]](title, items, settings) {
 
-  setTitle(title)
 
-  // chunks, updaters, and widgets
-  val updaters = chunks.map(chunk => new PaletteChunkUpdater(chunk, settings.bitsPerChannel, settings.viewPaletteCols))
-  val widgets = updaters.map(_.widget)
-
-  val scrollPane = new WidgetScroller(widgets, selectable = true)
-
-  build(WindowConstants.HIDE_ON_CLOSE)
-
-  pack()
-  setResizable(true)
-
-  /////////////////////////////////////////
-
-  def add(chunk: Named[Array[Color]]): Unit = {
-    val updater = new PaletteChunkUpdater(chunk, settings.bitsPerChannel, settings.viewPaletteCols)
-    val widget = updater.widget
-    chunks   += chunk
-    updaters += updater
-    widgets  += widget
+  override def buildUpdater(item: Named[Array[Color]]): WidgetUpdater = {
+    new PaletteChunkUpdater(item, settings.bitsPerChannel, settings.viewPaletteCols)
   }
 
 
-  def update(idx: Int, chunk: Named[Array[Color]]): Unit = {
-    val updater = new PaletteChunkUpdater(chunk, settings.bitsPerChannel, settings.viewPaletteCols)
-    updater.widget.setSelected(widgets(idx).getSelected)
-    updater.update()
-    val widget = updater.widget
-    chunks.update(idx, chunk)
-    updaters.update(idx, updater)
-    widgets.update(idx, widget)
+  override def buildItem(): Option[Named[Array[Color]]] = {
+    val name = new JTextField("Pal Chunk " + items.length)
+    val maxMultiple = settings.paletteSize / settings.colorsPerTile
+    val size = new JComboBox((1 to maxMultiple).map(x => (x * settings.colorsPerTile).toString).toArray)
+
+    val option = JOptionPane.showConfirmDialog(
+        null, Array("Name:", name, "Size:", size), "Add Palette Chunk", JOptionPane.OK_CANCEL_OPTION)
+
+    if (option == JOptionPane.OK_OPTION) {
+      Some(Named(
+        name.getText,
+        TileUtil.colorArray((size.getSelectedIndex + 1) * settings.colorsPerTile)))
+    } else {
+      None
+    }
   }
 
 
-  def rebuild(): Unit = {
-    scrollPane.rebuild()
-    repaint()
+  override def editAction(idx: Int): Unit = {
+     val item = items(idx)
+     val editor = new PaletteWindow(item.name, item.value, settings.bitsPerChannel, updaters(idx))
+     editor.setLocationRelativeTo(null) // TODO: set location from saved window location settings
+     editor.setVisible(true)
   }
 
-
-  //////////////////////////////////////////
-
-  override def buildPanel(): JPanel = {
-    val panel = new JPanel()
-    panel.setLayout(new BorderLayout())
-    panel.add(scrollPane, BorderLayout.CENTER)
-    panel.add(scrollPane.scrollBar, BorderLayout.EAST)
-    panel
-  }
-
-
-  override def buildToolBar(): JToolBar = {
-
-    val mainToolbar = new JToolBar()
-
-    val edit = new JButton("Edit")
-    edit.addActionListener(new ActionListener() {
-      def actionPerformed(event: ActionEvent): Unit = {
-        val idx = scrollPane.getSelectedIdx
-        if (idx >= 0 && idx < widgets.length) {
-          val chunk = chunks(idx)
-          val editor = new PaletteWindow(chunk.name, chunk.value, settings.bitsPerChannel, updaters(idx))
-          editor.setLocationRelativeTo(null)
-          editor.setVisible(true)
-        }
-
-      }
-    })
-    edit.setFocusable(false)
-    mainToolbar.add(edit)
-
-    val rename = new JButton("Rename")
-    rename.addActionListener(new ActionListener() {
-      def actionPerformed(event: ActionEvent): Unit = {
-        val idx = scrollPane.getSelectedIdx
-        if (idx >= 0 && idx < widgets.length) {
-          val chunk = chunks(idx)
-          val newName = JOptionPane.showInputDialog(null, "Enter a new name:", chunk.name)
-          if (newName != null && newName.length > 0) {
-            val newChunk = chunk.copy(name = newName)
-            PaletteChunksWindow.this.update(idx, newChunk)
-            PaletteChunksWindow.this.rebuild()
-          }
-        }
-      }
-    })
-    rename.setFocusable(false)
-    mainToolbar.add(rename)
-
-    val add = new JButton("Add")
-    add.addActionListener(new ActionListener() {
-      def actionPerformed(event: ActionEvent): Unit = {
-
-        val name = new JTextField("Pal Chunk " + chunks.length)
-
-        val maxMultiple = settings.paletteSize / settings.colorsPerTile
-        val size = new JComboBox((1 to maxMultiple).map(x => (x * settings.colorsPerTile).toString).toArray)
-
-        val option = JOptionPane.showConfirmDialog(
-            null, Array("Name:", name, "Size:", size), "Add Palette Chunk", JOptionPane.OK_CANCEL_OPTION)
-
-        if (option == JOptionPane.OK_OPTION) {
-          val newChunk = Named(
-              name.getText,
-              TileUtil.colorArray((size.getSelectedIndex + 1) * settings.colorsPerTile))
-          PaletteChunksWindow.this.add(newChunk)
-          PaletteChunksWindow.this.rebuild()
-        }
-
-      }
-    })
-    add.setFocusable(false)
-    mainToolbar.add(add)
-
-    mainToolbar.setFloatable(false)
-
-    mainToolbar
-  }
-
-
-  /////////////////////////////////////////////
-
-  // describes how to create a widget that shows a palette chunk with an edit button
-  // that can be efficiently updated by the palette editor
 
   class PaletteChunkUpdater(
       chunk: Named[Array[Color]], bitsPerChannel: Int, cols: Int) extends WidgetUpdater {
@@ -168,9 +73,11 @@ class PaletteChunksWindow(
       draw()
       widget.repaint()
     }
+
   }
 
 }
+
 
 
 object PaletteChunksWindow {

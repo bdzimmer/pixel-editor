@@ -103,6 +103,8 @@ object TileCollectionModel {
 
 object Experiment {
 
+  import javax.swing.UIManager
+
   import TileCollectionModel._
   import bdzimmer.pixeleditor.view.TileCollectionWindow
   import bdzimmer.pixeleditor.view.SettingsDialog
@@ -110,6 +112,9 @@ object Experiment {
   def main(args: Array[String]): Unit = {
 
     val tc = emptyCollection(SettingsDialog.Default, 512)
+
+     UIManager.setLookAndFeel(
+         UIManager.getSystemLookAndFeelClassName())
 
     new TileCollectionWindow(
         "Test", tc,
