@@ -16,6 +16,7 @@ class VMapsWindow(
     title: String,
     items: Buffer[Named[VMap]],
     pixels: Pixels,
+    pixelsUpdater: Updater,
     paletteChunks: Buffer[Named[Array[Color]]],
     globalPalette: Array[Color],
     globalPaletteUpdater: Updater,
@@ -49,7 +50,7 @@ class VMapsWindow(
   override def editAction(idx: Int): Unit = {
      val item = items(idx)
      val editor = new VMapWindow(
-         item.name, item.value, pixels, paletteChunks,
+         item.name, item.value, pixels, pixelsUpdater, paletteChunks,
          globalPalette, globalPaletteUpdater, tileContainer, zoomWindow, settings)
      editor.setLocationRelativeTo(null) // TODO: set location from saved window location settings
      editor.setVisible(true)
@@ -58,12 +59,17 @@ class VMapsWindow(
 
   class VMapUpdater(vmap: Named[VMap]) extends WidgetUpdater {
 
-    // TODO: use name eventually
-    // TODO: use colors specified in first palette chunk, not globalPalette
-    val image = new TilesetImage(vmap.value.entries, pixels.tiles, globalPalette, 1, settings)
+    val palette = vmap.value.palConfs(0).value.chunkIdxs.map(i => paletteChunks(i).value).flatten.toArray
+
+    val image = new TilesetImage(
+        vmap.value.entries,
+        pixels.tiles,
+        palette,
+        1,
+        settings)
 
     draw()
-    val widget = new ImageWidget("", image.indexedGraphics.getImage, List(), 0, 0)
+    val widget = new ImageWidget(vmap.name, image.indexedGraphics.getImage, List(), 0, 24)
 
     def draw(): Unit = {
       println("VMapUpdater draw")

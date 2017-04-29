@@ -85,15 +85,15 @@ public class IndexedGraphics extends JPanel {
 
 
   ///////////////////////////////////////////////////////////////////////////////////////////////////////
-  
-  
+
+
   // functions for drawing tiles and tilesets
 
   // all of this needs to be moved to tileutil
 
-  
+
   ///////////////////////////////////////////////////////////////////////////////
-  
+
 
   /**
    * Set a pixel at a given location.
@@ -146,7 +146,7 @@ public class IndexedGraphics extends JPanel {
       }
     }
   }
-  
+
 
   public BufferedImage getImage() {
     return this.screenBuffer;
@@ -163,7 +163,7 @@ public class IndexedGraphics extends JPanel {
    */
   public void updateClut() {
     // this also requires redrawing of all DosGraphics' to take effect
-    for (int i = 0; i < 256; i++) {
+    for (int i = 0; i < palette.length; i++) {
       palettePacked[i] = 255 << 24 | (palette[i].r() * colorFactor) << 16 | (palette[i].g() * colorFactor) << 8 | (palette[i].b() * colorFactor);
     }
 

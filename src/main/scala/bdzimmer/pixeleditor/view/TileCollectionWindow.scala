@@ -14,7 +14,7 @@ import scala.collection.mutable.Buffer
 
 import bdzimmer.pixeleditor.model.TileCollectionModel._
 import bdzimmer.pixeleditor.model.{Color, TileContainer, TileCollectionModel}
-import bdzimmer.pixeleditor.controller.IO
+import bdzimmer.pixeleditor.controller.{IO, PalUtil}
 
 import bdzimmer.util.StringUtils._
 import bdzimmer.util.PropertiesWrapper
@@ -30,14 +30,15 @@ case class TileCollectionFiles(filename: String) {
 
 
 class TileCollectionWindow(
-    var titleString: String,
+    var name: String,
     var tileCollection: TileCollection,
-    var filename: String,
     var workingDirname: String) extends CommonWindow {
 
-  updateTitle()
+  setTitle("Tile Collection - " + name)
 
   val tileContainer = new TileContainer
+
+  var filename = ""
 
   var globalPalette: Array[Color] = null
 
@@ -57,6 +58,10 @@ class TileCollectionWindow(
         wlocs("tilecollection.x").map(_.toIntSafe(0)).getOrElse(0),
         wlocs("tilecollection.y").map(_.toIntSafe(0)).getOrElse(0))
 
+  val recentFilesFilename = "recent.properties"
+
+  val recentFiles = new PropertiesWrapper(recentFilesFilename)
+
   initWindows()
 
   addWindowListener(new WindowAdapter() {
@@ -70,6 +75,17 @@ class TileCollectionWindow(
   build(WindowConstants.EXIT_ON_CLOSE)
   packAndShow(false)
 
+  for {
+    wd <- recentFiles("workingdir")
+    fn <- recentFiles("workingfile")
+  } yield {
+    workingDirname = wd
+    filename       = fn
+  }
+
+  if (workingDirname.length > 0 && filename.length > 0) {
+     readCollection(workingDirname / filename)
+  }
 
   //////
 
@@ -78,13 +94,18 @@ class TileCollectionWindow(
     saveWindowLocations()
     val settings = SettingsDialog.getSettings()
     tileCollection = TileCollectionModel.emptyCollection(settings, 1024)
+    name = "Untitled"
     initWindows()
   }
 
 
+  // TODO: move actual reading and writing functionality to IO
+
   def readCollection(filename: String): Unit = {
 
     saveWindowLocations()
+
+    name = new File(filename).getName
 
     val tcf = TileCollectionFiles(filename)
 
@@ -102,23 +123,33 @@ class TileCollectionWindow(
       paletteChunks
     )
 
+    setTitle("Tile Collection - " + name)
+
     initWindows()
+
   }
 
 
   def writeCollection(filename: String): Unit = {
+
+    saveWindowLocations()
+
     val tcf = TileCollectionFiles(filename)
-    new File(filename).mkdirs()
+    val outFile = new File(filename)
+    name = outFile.getName
+    outFile.mkdirs()
 
     IO.writeSettings(tcf.settingsFile, tileCollection.settings)
     IO.writePixels(tcf.pixelsFile, tileCollection.pixels, tileCollection.settings)
     IO.writeVMaps(tcf.vMapsFile, tileCollection.vmaps, tileCollection.settings)
     IO.writePaletteChunks(tcf.paletteChunksFile, tileCollection.paletteChunks)
-  }
 
+    setTitle(name + " - Tile Collection")
 
-  def updateTitle(): Unit = {
-    setTitle(titleString)
+    pixelsWindow.setTitle(name + " - Pixels")
+    vMapsWindow.setTitle(name + " - VMaps")
+    paletteChunksWindow.setTitle(name + " - PaletteChunks")
+
   }
 
 
@@ -130,10 +161,11 @@ class TileCollectionWindow(
       }
     })
 
+
     globalPalette = (0 until tileCollection.settings.paletteSize).map(_ => Color(0, 0, 0)).toArray
 
     globalPaletteWindow = new PaletteWindow(
-      "Global Palette", globalPalette, tileCollection.settings.bitsPerChannel, null)
+      name + " - Global Palette", globalPalette, tileCollection.settings.bitsPerChannel, null)
 
     zoomWindow = new ZoomedTileWindow(
         "Zoom",
@@ -147,34 +179,18 @@ class TileCollectionWindow(
 
     // initialize Pixels window
     pixelsWindow = new PixelsWindow(
-        "Pixels",
+        name + " - Pixels",
         tileCollection.pixels,
         tileCollection.settings,
         globalPaletteWindow,
         tileContainer,
         zoomWindow)
-    zoomWindow.getUpdaters.add(pixelsWindow.updater)
-
-    // intiialize VMap window
-    /*
-    vMapWindow = new VMapWindow(
-        "VMap - " + tileCollection.vmaps(0).name,
-        tileCollection.vmaps(0).value,
-        tileCollection.pixels,
-        tileCollection.paletteChunks,
-        globalPalette,
-        new DumbUpdater(globalPaletteWindow),
-        tileContainer,
-        zoomWindow,
-        tileCollection.settings)
-    zoomWindow.getUpdaters.add(vMapWindow.updater)
-    *
-    */
 
     vMapsWindow = new VMapsWindow(
-      "VMaps",
+      name + " - VMaps",
       tileCollection.vmaps,
       tileCollection.pixels,
+      pixelsWindow.updater,
       tileCollection.paletteChunks,
       globalPalette,
       new DumbUpdater(globalPaletteWindow),
@@ -182,16 +198,22 @@ class TileCollectionWindow(
       zoomWindow,
       tileCollection.settings)
 
-    // TODO: figure out how to connect zoomWindow to vMapsWindow and vMapWindow
-    // zoomWindow.getUpdaters.add(vMapsWindow.updater)
-
     // initialize Palette Chunks window
     paletteChunksWindow = new PaletteChunksWindow(
-        "Palette Chunks",
+        name + " - Palette Chunks",
         tileCollection.paletteChunks,
         tileCollection.settings)
 
     loadWindowLocations()
+
+    // if the first VMap has a palConf, apply that to the global palette
+    if (tileCollection.vmaps.size > 0 && tileCollection.vmaps(0).value.palConfs.size > 0) {
+      println("GOT HERE")
+      val palConf = tileCollection.vmaps(0).value.palConfs(0).value.chunkIdxs.map(i => tileCollection.paletteChunks(i).value)
+      PalUtil.applyPalConf(globalPalette, palConf)
+      pixelsWindow.updater.update()
+    }
+
 
     globalPaletteWindow.setVisible(true)
     pixelsWindow.setVisible(true)
@@ -313,6 +335,11 @@ class TileCollectionWindow(
     jmExit.addActionListener(new ActionListener() {
       def actionPerformed(ae: ActionEvent) {
         saveWindowLocations()
+        recentFiles.set("workingdir", workingDirname)
+        recentFiles.set("workingfile", filename)
+        recentFiles.prop.store(
+          new java.io.FileOutputStream(recentFilesFilename),
+          "created by PixelEditor")
         sys.exit()
       }
     })
@@ -339,8 +366,8 @@ class TileCollectionWindow(
     val globalPaletteButton = new JButton("Global Palette")
     globalPaletteButton.addActionListener(new ActionListener() {
       def actionPerformed(ae: ActionEvent): Unit = {
-        val isVisible = globalPaletteWindow.isVisible
-        globalPaletteWindow.setVisible(!isVisible)
+        globalPaletteWindow.setVisible(true)
+        globalPaletteWindow.toFront()
       }
     })
     panel.add(globalPaletteButton)
@@ -348,8 +375,8 @@ class TileCollectionWindow(
     val paletteChunksButton = new JButton("Palette Chunks")
     paletteChunksButton.addActionListener(new ActionListener() {
       def actionPerformed(ae: ActionEvent): Unit = {
-        val isVisible = paletteChunksWindow.isVisible
-        paletteChunksWindow.setVisible(!isVisible)
+        paletteChunksWindow.setVisible(true)
+        paletteChunksWindow.toFront()
       }
     })
     panel.add(paletteChunksButton)
@@ -357,8 +384,8 @@ class TileCollectionWindow(
     val pixelsButton = new JButton("Pixels")
     pixelsButton.addActionListener(new ActionListener() {
       def actionPerformed(ae: ActionEvent): Unit = {
-        val isVisible = pixelsWindow.isVisible
-        pixelsWindow.setVisible(!isVisible)
+        pixelsWindow.setVisible(true)
+        pixelsWindow.toFront()
       }
     })
     panel.add(pixelsButton)
@@ -367,8 +394,8 @@ class TileCollectionWindow(
     val vMapButton = new JButton("VMaps")
     vMapButton.addActionListener(new ActionListener() {
       def actionPerformed(ae: ActionEvent): Unit = {
-        val isVisible = vMapsWindow.isVisible
-        vMapsWindow.setVisible(!isVisible)
+        vMapsWindow.setVisible(true)
+        vMapsWindow.toFront()
       }
     })
     panel.add(vMapButton)

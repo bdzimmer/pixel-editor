@@ -88,7 +88,10 @@ object TileCollectionModel {
     val tc = TileCollection(settings, pixels, vMaps, chunks)
 
     tc.vmaps +=
-        VMap(Buffer(), Array.fill(settings.vMapSize)(new VMapEntry(0, 0, false, false, TileProperties(0)))) named "VMap 0"
+        VMap(
+             Buffer(PaletteConf(Buffer(0)) named "Pal Conf 0"),
+             Array.fill(settings.vMapSize)(new VMapEntry(0, 0, false, false, TileProperties(0)))
+        ) named "VMap 0"
 
     tc.paletteChunks += TileUtil.colorArray(16) named "Pal Chunk 0"
 
@@ -113,12 +116,11 @@ object Experiment {
 
     val tc = emptyCollection(SettingsDialog.Default, 512)
 
-     UIManager.setLookAndFeel(
-         UIManager.getSystemLookAndFeelClassName())
+    // UIManager.setLookAndFeel(
+    //     UIManager.getSystemLookAndFeelClassName())
 
     new TileCollectionWindow(
-        "Test", tc,
-        "junk", "junk").setVisible(true)
+        "Test", tc, "junk").setVisible(true)
 
   }
 }

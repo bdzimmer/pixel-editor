@@ -24,6 +24,7 @@ class VMapWindow(
     title: String,
     vMap: VMap,
     pixels: Pixels,
+    pixelsUpdater: Updater,
     paletteChunks: Buffer[Named[Array[Color]]],
     globalPalette: Array[Color],
     globalPaletteUpdater: Updater,
@@ -60,6 +61,8 @@ class VMapWindow(
   }
 
   val editor = new VMapEntryEditor(vMap.entries, updater, settings)
+
+  applyPalConf()
 
   build(WindowConstants.HIDE_ON_CLOSE)
   rebuild()
@@ -115,6 +118,8 @@ class VMapWindow(
         bitmap,
         new ArrayContainer(pixels.defaultPalOffsets, pixelsIdx),
         settings.colorsPerTile)
+    zoomWindow.setUpdater(updater)
+
     zoomWindow.toFront()
     zoomWindow.setVisible(true)
 
@@ -125,6 +130,8 @@ class VMapWindow(
     val palConf = vMap.palConfs(selectedPalConfIdx).value.chunkIdxs.map(i => paletteChunks(i).value)
     PalUtil.applyPalConf(globalPalette, palConf)
     globalPaletteUpdater.update()
+    updater.update()
+    pixelsUpdater.update()
   }
 
   // TODO: really only the selector needs to be rebuilt

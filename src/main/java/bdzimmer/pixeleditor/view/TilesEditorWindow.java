@@ -182,14 +182,13 @@ public class TilesEditorWindow extends CommonWindow {
     Container<Integer> dummyContainer = new SimpleContainer<Integer>(0);
 
     if (zoomWindow == null || !zoomWindow.isVisible()) {
-
       zoomWindow = new ZoomedTileWindow(
           "Zoom",
           tileset.tiles()[selectedIdx].bitmap(),
           dummyContainer,
           256,
           paletteWindow);
-      zoomWindow.getUpdaters().add(new DumbUpdater(this));
+      zoomWindow.setUpdater(new DumbUpdater(this));
       zoomWindow.setLocationRelativeTo(this);
     } else {
       zoomWindow.setTile(

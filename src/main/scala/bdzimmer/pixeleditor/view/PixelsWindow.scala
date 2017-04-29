@@ -112,6 +112,8 @@ class PixelsWindow(
         bitmap,
         new ArrayContainer(pixels.defaultPalOffsets, pixelsIdx),
         settings.colorsPerTile)
+    zoomWindow.setUpdater(updater)
+
     zoomWindow.toFront()
     zoomWindow.setVisible(true)
 

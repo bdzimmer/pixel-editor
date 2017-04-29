@@ -23,13 +23,10 @@ import javax.swing.JPanel;
 import javax.swing.JToggleButton;
 import javax.swing.JToolBar;
 
-import java.util.ArrayList;
-
-
 import bdzimmer.pixeleditor.controller.FloodFill;
 import bdzimmer.pixeleditor.model.IndexedGraphics;
-// import bdzimmer.pixeleditor.model.TileProperties;
 import bdzimmer.pixeleditor.controller.TileUtil;
+
 
 public class ZoomedTileWindow extends JFrame {
 
@@ -46,7 +43,7 @@ public class ZoomedTileWindow extends JFrame {
   private boolean showGridlines;
 
   private PaletteWindow paletteWindow;
-  private ArrayList<Updater> updaters = new ArrayList<Updater>();
+  private Updater updater = null;
 
   private IndexedGraphics dosGraphics;
   private IndexedGraphics tileTile;
@@ -112,8 +109,7 @@ public class ZoomedTileWindow extends JFrame {
 
       // Only repaint the tileWindow when the mouse is released
       public void mouseReleased(MouseEvent event) {
-        // tileWindow.repaint();
-        for (Updater updater : ZoomedTileWindow.this.updaters) {
+        if (updater != null) {
           updater.update();
         }
       }
@@ -375,9 +371,11 @@ public class ZoomedTileWindow extends JFrame {
 
     repaint();
     // this.tileWindow.repaint();
-    for (Updater updater : this.updaters) {
+
+    if (updater != null) {
       updater.update();
     }
+
   }
 
   /*
@@ -593,8 +591,8 @@ public class ZoomedTileWindow extends JFrame {
     // this.updateTileProps();
   }
 
-  public ArrayList<Updater> getUpdaters() {
-    return this.updaters;
-  }
 
+  public void setUpdater(Updater updater) {
+    this.updater = updater;
+  }
 }

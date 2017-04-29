@@ -49,7 +49,7 @@ public class PaletteWindow extends JFrame {
   private final int rows;
   private final int colorFactor;
   private final int bitsPerChannel;
-  private final Updater updater;
+  public final Updater updater;
 
   private JSpinner rVal = new JSpinner();
   private JSpinner gVal = new JSpinner();
@@ -254,13 +254,13 @@ public class PaletteWindow extends JFrame {
     }
     refreshPalette();
   }
-  
+
   public void paint(Graphics g) {
 	  super.paint(g);
 	  refreshPalette();
   }
-  
-  
+
+
   ////////
 
 
@@ -275,7 +275,7 @@ public class PaletteWindow extends JFrame {
   public Color[] getPalette() {
     return palette;
   }
-  
+
   public int getBitsPerChannel() {
     return bitsPerChannel;
   }
