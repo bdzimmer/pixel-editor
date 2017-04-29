@@ -13,6 +13,9 @@ import java.awt.image.BufferedImage
 import javax.swing.{JButton, JComboBox, JOptionPane, JPanel, JToolBar, JToggleButton, JSeparator, WindowConstants, SwingConstants}
 import javax.swing.event.{ChangeListener, ChangeEvent}
 
+import java.awt.event.MouseWheelEvent
+import java.awt.event.MouseWheelListener
+
 import bdzimmer.pixeleditor.model.TileCollectionModel._
 import bdzimmer.pixeleditor.controller.TileUtil
 import bdzimmer.pixeleditor.model.{Color, Tile, TileContainer}
@@ -34,38 +37,51 @@ class VMapWindow(
 
   setTitle(title)
 
+  var scale = 2
+
   var drawGrid = false
   var drawTileNumbers = false
   var curPalOffset = 0
 
   val rows = (vMap.entries.length + settings.viewTileCols - 1) / settings.viewTileCols;
   val updater = new VMapTilesUpdater()
-  val scrollPane = new WidgetScroller(Buffer(updater.widget), selectable = false)
+
+  val tilesPanel = new JPanel()
+  tilesPanel.add(updater.image.indexedGraphics)
 
   val palConfsPanel = new JPanel()
   var selectedPalConfIdx = 0
-
   var palConfIdx = 0
-
   var vMapEntryIdx = 0
 
-  updater.widget.addMouseListener(new MouseAdapter() {
-     override def mouseClicked(event: MouseEvent): Unit = {
-       handleClicks(event, true)
-     }
+  tilesPanel.addMouseListener(new MouseAdapter() {
+    override def mouseClicked(event: MouseEvent): Unit = {
+      handleClicks(event, true)
+    }
   })
 
-  def rebuild(): Unit = {
-    scrollPane.rebuild()
-    repaint()
-  }
+  tilesPanel.addMouseWheelListener(new MouseWheelListener() {
+    override def mouseWheelMoved(event: MouseWheelEvent): Unit = {
+      val notches = event.getWheelRotation().signum
+      scale += notches
+      if (notches < 1) {
+        scale = 1
+      }
+      updater.buildImage()
+      updater.update()
+      tilesPanel.removeAll()
+      tilesPanel.add(updater.image.indexedGraphics)
+      pack()
+      repaint()
+    }
+  })
 
   val editor = new VMapEntryEditor(vMap.entries, updater, settings)
 
   applyPalConf()
 
   build(WindowConstants.HIDE_ON_CLOSE)
-  rebuild()
+  repaint()
   pack()
   setResizable(false)
 
@@ -75,8 +91,8 @@ class VMapWindow(
   def handleClicks(event: MouseEvent, allowCopy: Boolean) = {
 
     val selectedIdxAny =
-        (event.getY() / (settings.tileHeight * VMapWindow.Scale)) * settings.viewTileCols +
-        (event.getX() / (settings.tileWidth * VMapWindow.Scale))
+        (event.getY() / (settings.tileHeight * scale)) * settings.viewTileCols +
+        (event.getX() / (settings.tileWidth * scale))
 
     val prevVMapEntryIdx = vMapEntryIdx
 
@@ -209,8 +225,9 @@ class VMapWindow(
   override def buildPanel(): JPanel = {
     val panel = new JPanel()
     panel.setLayout(new BorderLayout())
-    panel.add(scrollPane, BorderLayout.CENTER)
-    panel.add(scrollPane.scrollBar, BorderLayout.EAST)
+    // panel.add(scrollPane, BorderLayout.CENTER)
+    // panel.add(scrollPane.scrollBar, BorderLayout.EAST)
+    panel.add(tilesPanel, BorderLayout.CENTER)
     panel.add(buildToolBars(), BorderLayout.NORTH)
     panel
   }
@@ -268,12 +285,16 @@ class VMapWindow(
   ///////
 
 
-  class VMapTilesUpdater() extends WidgetUpdater {
+  class VMapTilesUpdater() extends Updater {
 
-    val image = new TilesetImage(vMap.entries, pixels.tiles, globalPalette, VMapWindow.Scale, settings)
+    var image: TilesetImage = null
 
+    buildImage()
     draw()
-    val widget = new ImageWidget("", image.indexedGraphics.getImage, List(), 0, 0)
+
+    def buildImage(): Unit = {
+      image = new TilesetImage(vMap.entries, pixels.tiles, globalPalette, scale, settings)
+    }
 
     def draw(): Unit = {
       println("VMapTilesUpdater draw")
@@ -282,18 +303,13 @@ class VMapWindow(
 
     def update(): Unit = {
       draw()
-      widget.repaint()
+      repaint()
     }
 
   }
 
 }
 
-
-
-object VMapWindow {
-  val Scale = 2
-}
 
 
 
