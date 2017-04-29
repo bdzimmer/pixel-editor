@@ -21,6 +21,8 @@ import bdzimmer.pixeleditor.model.Tileset;
 import bdzimmer.pixeleditor.model.TileAttributes;
 import bdzimmer.pixeleditor.model.Color;
 import bdzimmer.pixeleditor.controller.OldTilesetLoader;
+import bdzimmer.pixeleditor.controller.TileUtil;
+
 
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
@@ -47,13 +49,13 @@ public class Main extends CommonWindow {
 
   // private final int[][] globalPalette = new int[256][3];
 
-  private final Color[] globalPalette = new Color[256];
+  private final Color[] globalPalette = TileUtil.colorArray(256); // new Color[256];
 
   // private PaletteWindowOld paletteWindow = new PaletteWindowOld(globalPalette);
 
   private PaletteWindow paletteWindow = new PaletteWindow(
       "Global Palette",
-      new Color[256],
+      globalPalette, // new Color[256],
       6, null);
 
   private final TileContainer tileContainer = new TileContainer();

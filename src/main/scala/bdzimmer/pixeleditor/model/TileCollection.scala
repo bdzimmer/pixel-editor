@@ -120,7 +120,7 @@ object Experiment {
     //     UIManager.getSystemLookAndFeelClassName())
 
     new TileCollectionWindow(
-        "Test", tc, "junk").setVisible(true)
+        "Untitled", tc, System.getProperty("user.dir")).setVisible(true)
 
   }
 }

@@ -12,6 +12,7 @@ import javax.swing.{JFileChooser, JButton, JMenuBar, JMenu, JMenuItem, JPanel, W
 
 import scala.collection.mutable.Buffer
 
+import bdzimmer.pixeleditor.model.TileOptions
 import bdzimmer.pixeleditor.model.TileCollectionModel._
 import bdzimmer.pixeleditor.model.{Color, TileContainer, TileCollectionModel}
 import bdzimmer.pixeleditor.controller.{IO, PalUtil}
@@ -34,7 +35,7 @@ class TileCollectionWindow(
     var tileCollection: TileCollection,
     var workingDirname: String) extends CommonWindow {
 
-  setTitle("Tile Collection - " + name)
+  setTitle(name + " - Tile Collection")
 
   val tileContainer = new TileContainer
 
@@ -75,6 +76,7 @@ class TileCollectionWindow(
   build(WindowConstants.EXIT_ON_CLOSE)
   packAndShow(false)
 
+  /*
   for {
     wd <- recentFiles("workingdir")
     fn <- recentFiles("workingfile")
@@ -86,6 +88,7 @@ class TileCollectionWindow(
   if (workingDirname.length > 0 && filename.length > 0) {
      readCollection(workingDirname / filename)
   }
+  */
 
   //////
 
@@ -114,8 +117,6 @@ class TileCollectionWindow(
     val vMaps = IO.readVMaps(tcf.vMapsFile, settings)
     val paletteChunks = IO.readPaletteChunks(tcf.paletteChunksFile)
 
-    println(paletteChunks)
-
     tileCollection = new TileCollection(
       settings,
       pixels,
@@ -123,8 +124,7 @@ class TileCollectionWindow(
       paletteChunks
     )
 
-    setTitle("Tile Collection - " + name)
-
+    setTitle(name + " - Tile Collection")
     initWindows()
 
   }
@@ -149,6 +149,59 @@ class TileCollectionWindow(
     pixelsWindow.setTitle(name + " - Pixels")
     vMapsWindow.setTitle(name + " - VMaps")
     paletteChunksWindow.setTitle(name + " - PaletteChunks")
+
+  }
+
+
+
+  // Import an old format tileset or spritesheet as a collection
+
+  def importCollection(filename: String): Unit = {
+
+    import bdzimmer.pixeleditor.model.TileProperties
+    import bdzimmer.pixeleditor.controller.{TileUtil, OldTilesetLoader}
+
+    saveWindowLocations()
+
+    val attrs = TileOptions.getOptions()
+    val loader = new OldTilesetLoader(filename, attrs)
+    val tileset = loader.load()
+
+    // create new collection that will gel with this
+    val settings = Settings(
+        6, 256, 256, attrs.width, attrs.height, attrs.count,
+        16, attrs.tilesPerRow)
+
+    val tc = TileCollectionModel.emptyCollection(settings, attrs.count)
+
+    // copy the data from the tileset into the collection
+
+    // 16 palette chunks of 16
+    tc.paletteChunks.clear()
+    for (i <- 0 until 16) {
+      val chunk = TileUtil.colorArray(16)
+      tc.paletteChunks += chunk named ("chunk " + i)
+    }
+
+    val pal = tileset.palettes(0).colors
+    for (i <- 0 until pal.length) {
+      val idx = i + tileset.palettes(0).start
+      val chunk = tc.paletteChunks(idx / 16).value
+      chunk(idx % 16) = pal(i)
+    }
+
+    // first palette conf of VMap is all chunks
+    tc.vmaps(0).value.palConfs(0) = PaletteConf((0 until 16).toBuffer) named "Default"
+
+    // Copy tiles data into pixels and set up trivial vMap entries
+    for (i <- 0 until tc.pixels.tiles.length) {
+      tc.pixels.tiles(i) = tileset.tiles(i)
+      tc.vmaps(0).value.entries(i) = VMapEntry(i, 0, false, false, TileProperties(0))
+    }
+
+    tileCollection = tc
+    setTitle(name + " - Tile Collection")
+    initWindows()
 
   }
 
@@ -208,12 +261,10 @@ class TileCollectionWindow(
 
     // if the first VMap has a palConf, apply that to the global palette
     if (tileCollection.vmaps.size > 0 && tileCollection.vmaps(0).value.palConfs.size > 0) {
-      println("GOT HERE")
       val palConf = tileCollection.vmaps(0).value.palConfs(0).value.chunkIdxs.map(i => tileCollection.paletteChunks(i).value)
       PalUtil.applyPalConf(globalPalette, palConf)
       pixelsWindow.updater.update()
     }
-
 
     globalPaletteWindow.setVisible(true)
     pixelsWindow.setVisible(true)
@@ -331,6 +382,18 @@ class TileCollectionWindow(
       }
     })
 
+    val jmImport = new JMenuItem("Import")
+    jmImport.addActionListener(new ActionListener() {
+      def actionPerformed(ae: ActionEvent) {
+        fileChooser(workingDirname, save = false).foreach({case (wd, fn) =>  {
+          importCollection(wd / fn)
+          // workingDirname = wd
+          // filename       = fn + "_update"
+        }})
+      }
+    })
+
+
     val jmExit = new JMenuItem("Exit")
     jmExit.addActionListener(new ActionListener() {
       def actionPerformed(ae: ActionEvent) {
@@ -350,6 +413,8 @@ class TileCollectionWindow(
     fileMenu.addSeparator()
     fileMenu.add(jmSave)
     fileMenu.add(jmSaveAs)
+    fileMenu.addSeparator()
+    fileMenu.add(jmImport)
     fileMenu.addSeparator()
     fileMenu.add(jmExit)
     mainMenu.add(fileMenu)
@@ -425,7 +490,7 @@ class TileCollectionWindow(
 
     } else {
       jfc.setDialogType(JFileChooser.OPEN_DIALOG)
-      jfc.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY)
+      jfc.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES)
       jfc.showOpenDialog(null)
     }
 
