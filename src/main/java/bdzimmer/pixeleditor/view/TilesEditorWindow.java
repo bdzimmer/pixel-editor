@@ -460,7 +460,8 @@ public class TilesEditorWindow extends CommonWindow {
           animationWindow.dispose();
         }
         animationWindow = new AnimationWindow(
-            TilesEditorWindow.this,
+            TilesEditorWindow.this.tileset.tiles(),
+            TilesEditorWindow.this.paletteWindow.getPalette(),
             TilesEditorWindow.this.tileContainer.getTileIndex());
         animationWindow.setLocationRelativeTo(TilesEditorWindow.this);
       }

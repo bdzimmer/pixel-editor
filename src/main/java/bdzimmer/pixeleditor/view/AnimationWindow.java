@@ -21,9 +21,11 @@ import java.awt.event.FocusListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 
+import bdzimmer.pixeleditor.model.Color;
 import bdzimmer.pixeleditor.model.Direction;
 import bdzimmer.pixeleditor.model.IndexedGraphics;
 import bdzimmer.pixeleditor.model.TileContainer;
+import bdzimmer.pixeleditor.model.Tile;
 import bdzimmer.pixeleditor.view.DragDrop.TileImportTransferHandler;
 import bdzimmer.pixeleditor.controller.TileUtil;
 
@@ -40,7 +42,8 @@ public class AnimationWindow extends CommonWindow {
   private final int bgTilesWide = 5;
   private final int bgTilesHigh = 5;
 
-  final TilesEditorWindow parent;
+  final Tile[] tiles;
+  final Color[] palette;
 
   // default animation settings - traditional walk
 
@@ -62,9 +65,14 @@ public class AnimationWindow extends CommonWindow {
   private int bgDirection = 0;
 
 
-  public AnimationWindow(TilesEditorWindow parent, int tileIndex) {
-
-    this.parent = parent;
+  public AnimationWindow(
+      Tile[] tiles,
+      Color[] palette,
+      int tileIndex) {
+	  
+	this.tiles = tiles;
+	this.palette = palette;
+	this.tileIndex = tileIndex;
 
     build(JFrame.DISPOSE_ON_CLOSE);
 
@@ -92,12 +100,16 @@ public class AnimationWindow extends CommonWindow {
 
 
   private IndexedGraphics createDosGraphics() {
+	  
+	int height = tiles[0].bitmap().length;
+	int width = tiles[0].bitmap()[0].length;
+			
     IndexedGraphics dg = new IndexedGraphics(
-        parent.getTileSet().height() + borderY * 2,
-        parent.getTileSet().width()  + borderX * 2,
+        height + borderY * 2,
+        width  + borderX * 2,
         this.scale);
 
-    dg.setPalette(parent.getPaletteWindow().getPalette());
+    dg.setPalette(palette);
     return dg;
   }
 
@@ -140,7 +152,7 @@ public class AnimationWindow extends CommonWindow {
 
     TileUtil.drawTileTrans(
     	dosGraphics,
-    	parent.getTileSet().tiles()[tileIndex].bitmap(),
+    	tiles[tileIndex].bitmap(),
     	borderX,
     	borderY);
     
@@ -348,7 +360,7 @@ public class AnimationWindow extends CommonWindow {
           // System.out.println(tileIndex + " -> " + offsetCharacter + " " + offsetDirection);
           // System.out.println(startCharacter + " " + startDirection + " " + offsetFrame + " -> " + curFrameIndex);
 
-          if (curFrameIndex < parent.getTileSet().tiles().length) {
+          if (curFrameIndex < tiles.length) {
             scroll();
             draw(curFrameIndex);
           }

@@ -76,6 +76,26 @@ object TileUtil {
   }
 
 
+   def drawTileset(
+      ig: IndexedGraphics,
+      tiles: Array[Tile],
+      tileWidth: Int, tileHeight: Int, tilesPerRow: Int): Unit = {
+
+    val numRows = (tiles.length + tilesPerRow - 1) / tilesPerRow
+
+    for (i <- 0 until numRows) {
+      for (j <- 0 until tilesPerRow) {
+        val tileIdx = i * tilesPerRow + j
+        if (tileIdx < tiles.length) {
+          drawTile(
+              ig, tiles(tileIdx).bitmap,
+              j * tileWidth, i * tileHeight)
+        }
+      }
+    }
+  }
+
+
   ////////////////
 
   // update the colors in tile to stay within colorsPerTile from palIdx

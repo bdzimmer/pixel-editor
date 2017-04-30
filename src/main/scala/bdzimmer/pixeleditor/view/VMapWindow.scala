@@ -18,7 +18,7 @@ import java.awt.event.MouseWheelListener
 
 import bdzimmer.pixeleditor.model.TileCollectionModel._
 import bdzimmer.pixeleditor.controller.TileUtil
-import bdzimmer.pixeleditor.model.{Color, Tile, TileContainer}
+import bdzimmer.pixeleditor.model.{Color, Tile, Tileset, TileContainer}
 import bdzimmer.pixeleditor.controller.PalUtil
 import bdzimmer.pixeleditor.model.IndexedGraphics
 
@@ -42,6 +42,7 @@ class VMapWindow(
   var drawGrid = false
   var drawTileNumbers = false
   var curPalOffset = 0
+  var animationWindow: Option[AnimationWindow] = None
 
   val rows = (vMap.entries.length + settings.viewTileCols - 1) / settings.viewTileCols;
   val updater = new VMapTilesUpdater()
@@ -64,7 +65,7 @@ class VMapWindow(
     override def mouseWheelMoved(event: MouseWheelEvent): Unit = {
       val notches = event.getWheelRotation().signum
       scale += notches
-      if (notches < 1) {
+      if (scale < 1) {
         scale = 1
       }
       updater.buildImage()
@@ -109,6 +110,13 @@ class VMapWindow(
     if (event.isMetaDown()) {
       selectTile(pixelsIdx)
       editor.selectEntry(vMapEntryIdx)
+      // show in animation window
+      animationWindow.foreach(x => {
+        if (x.isVisible) {
+          x.setTileIndex(vMapEntryIdx)
+          x.toFront
+        }
+      })
     } else  if (allowCopy) {
       vMap.entries(vMapEntryIdx) = vMap.entries(prevVMapEntryIdx).copy()
       updater.update()
@@ -258,6 +266,21 @@ class VMapWindow(
     drawTileNumbersButton.setFocusable(false);
     mainToolbar.add(drawTileNumbersButton);
 
+    val animationButton = new JButton("Animation")
+    animationButton.addActionListener(new ActionListener() {
+      def actionPerformed(e: ActionEvent) {
+        animationWindow.foreach(_.dispose())
+
+        animationWindow = Some(new AnimationWindow(
+            updater.tiles,
+            globalPalette,
+            vMapEntryIdx))
+        animationWindow.foreach(_.setLocationRelativeTo(VMapWindow.this))
+      }
+    });
+    animationButton.setFocusable(false)
+    mainToolbar.add(animationButton)
+
     mainToolbar.addSeparator()
 
     rebuildPalConfsPanel()
@@ -288,6 +311,7 @@ class VMapWindow(
   class VMapTilesUpdater() extends Updater {
 
     var image: TilesetImage = null
+    val tiles = Array.fill(vMap.entries.length)(Tileset.emptyTile(settings.tileWidth, settings.tileHeight))
 
     buildImage()
     draw()
@@ -297,8 +321,10 @@ class VMapWindow(
     }
 
     def draw(): Unit = {
-      println("VMapTilesUpdater draw")
-      image.draw(drawGrid, drawTileNumbers)
+      val tempTiles = image.draw(drawGrid, drawTileNumbers)
+      for (idx <- 0 until tempTiles.length) {
+        tiles(idx) = tempTiles(idx)
+      }
     }
 
     def update(): Unit = {
@@ -311,10 +337,7 @@ class VMapWindow(
 }
 
 
-
-
 // TODO: PixelsTilesUpdater should use this
-
 // TODO: optionally show name
 
 class TilesetImage(
@@ -337,17 +360,20 @@ class TilesetImage(
 
   draw(false, false)
 
-  def draw(drawGrid: Boolean, drawTileNumbers: Boolean): Unit = {
+  def draw(drawGrid: Boolean, drawTileNumbers: Boolean): Array[Tile] = {
     indexedGraphics.updateClut()
 
     // TODO: x and y flips
-    val entryTiles = entries.map(x => tiles(x.pixelsIdx))
-    val palOffsets = entries.map(x => new Integer(x.palOffset))
+    // val entryTiles = entries.map(x => tiles(x.pixelsIdx))
+    // val palOffsets = entries.map(x => new Integer(x.palOffset))
+    val entryTiles = entries.map(x => {
+      val tile = tiles(x.pixelsIdx)
+      Tile(tile.bitmap.map(_.map(pixel => pixel + x.palOffset)))
+    })
 
     TileUtil.drawTileset(
         indexedGraphics,
         entryTiles,
-        palOffsets,
         settings.tileWidth,
         settings.tileHeight,
         settings.viewTileCols)
@@ -366,6 +392,8 @@ class TilesetImage(
           settings.tileWidth * scale,
           settings.tileHeight * scale)
     }
+
+    entryTiles
   }
 
 }
