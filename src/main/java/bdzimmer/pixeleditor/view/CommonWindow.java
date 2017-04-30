@@ -78,7 +78,7 @@ public abstract class CommonWindow extends JFrame {
   protected StatusBar buildStatusBar() {return null;};
 
   protected void onFocus() {
-    System.out.println("focus gained");
+    // System.out.println("focus gained");
     repaint();
   }
 

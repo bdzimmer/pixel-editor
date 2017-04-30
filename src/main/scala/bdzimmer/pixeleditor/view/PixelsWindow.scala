@@ -12,7 +12,7 @@ import javax.swing.event.{ChangeListener, ChangeEvent}
 
 import bdzimmer.pixeleditor.controller.TileUtil
 import bdzimmer.pixeleditor.model.TileCollectionModel._
-import bdzimmer.pixeleditor.model.{Color, Tile, TileContainer}
+import bdzimmer.pixeleditor.model.{Color, Tile, TileContainer, TileProperties}
 import bdzimmer.pixeleditor.model.IndexedGraphics
 
 
@@ -32,7 +32,7 @@ class PixelsWindow(
 
   val rows = (pixels.tiles.length + settings.viewTileCols - 1) / settings.viewTileCols;
 
-  val updater = new PixelsTilesUpdater(pixels.tiles, settings)
+  val updater = new VMapTilesUpdater()
   val scrollPane = new WidgetScroller(Buffer(updater.widget), selectable = false)
 
   updater.widget.addMouseListener(new MouseAdapter() {
@@ -137,7 +137,6 @@ class PixelsWindow(
     val drawGridButton = new JToggleButton("Grid")
     drawGridButton.addChangeListener(new ChangeListener() {
       override def stateChanged(e: ChangeEvent) {
-        println("grid show: "+ drawGridButton.isSelected)
         drawGrid = drawGridButton.isSelected
         updater.update
       }
@@ -147,7 +146,6 @@ class PixelsWindow(
     val drawTileNumbersButton = new JToggleButton("Numbers")
     drawTileNumbersButton.addChangeListener(new ChangeListener() {
       override def stateChanged(e: ChangeEvent) {
-        println("numbers show: "+ drawTileNumbersButton.isSelected)
         drawTileNumbers = drawTileNumbersButton.isSelected
         updater.update
       }
@@ -169,6 +167,7 @@ class PixelsWindow(
 
   ///////
 
+  /*
   class PixelsTilesUpdater(
       tiles: Array[Tile], settings: Settings) extends WidgetUpdater  {
 
@@ -220,6 +219,32 @@ class PixelsWindow(
       draw()
       widget.repaint()
     }
+  }
+  *
+  */
+
+
+  class VMapTilesUpdater() extends WidgetUpdater {
+
+    val entries = (0 until pixels.tiles.size).map(idx => {
+      VMapEntry(idx, pixels.defaultPalOffsets(idx), false, false, new TileProperties(0))
+    }).toArray
+    val image = new TilesetImage(entries, pixels.tiles, paletteWindow.getPalette, PixelsWindow.Scale, settings)
+
+    val widget = new ImageWidget("", image.indexedGraphics.getImage, List(), 0, 0)
+
+    draw()
+
+    def draw(): Unit = {
+      // TODO: update the image "entries" as palette offsets change
+      image.draw(drawGrid, drawTileNumbers)
+    }
+
+    def update(): Unit = {
+      draw()
+      repaint()
+    }
+
   }
 
 }

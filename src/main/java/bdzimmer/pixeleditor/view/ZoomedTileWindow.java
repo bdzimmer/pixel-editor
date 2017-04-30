@@ -2,7 +2,6 @@
 
 // Class for drawing and editing a tile or sprite zoomed.
 
-// TODO: default not visible
 
 package bdzimmer.pixeleditor.view;
 
@@ -285,7 +284,7 @@ public class ZoomedTileWindow extends JFrame {
     setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 
     setTitle(title);
-    setVisible(true);
+    // setVisible(true);
     setResizable(false);
     updateGraphics();
     repaint();

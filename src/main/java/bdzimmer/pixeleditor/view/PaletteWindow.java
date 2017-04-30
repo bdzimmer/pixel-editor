@@ -171,7 +171,6 @@ public class PaletteWindow extends JFrame {
 
     addFocusListener(new FocusAdapter() {
       public void focusGained(FocusEvent event) {
-        System.out.println("palette editor Focus gained!");
         update();
       }
     });

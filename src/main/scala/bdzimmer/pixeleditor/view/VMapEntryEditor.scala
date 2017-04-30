@@ -54,16 +54,14 @@ class VMapEntryEditor(
     val flipXButton = new JToggleButton("Flip X")
     flipXButton.addChangeListener(new ChangeListener() {
       override def stateChanged(e: ChangeEvent) {
-        println("flip x")
         entries(vMapEntryIdx) = entries(vMapEntryIdx).copy(flipX = flipXButton.isSelected)
         vMapWindowUpdater.update()
       }
     });
 
     val flipYButton = new JToggleButton("Flip Y")
-    flipXButton.addChangeListener(new ChangeListener() {
+    flipYButton.addChangeListener(new ChangeListener() {
       override def stateChanged(e: ChangeEvent) {
-        println("flip y")
         entries(vMapEntryIdx) = entries(vMapEntryIdx).copy(flipY = flipYButton.isSelected)
         vMapWindowUpdater.update()
       }

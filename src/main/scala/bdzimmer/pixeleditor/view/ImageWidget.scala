@@ -46,7 +46,7 @@ class ImageWidget(
   override def paintComponent(graphics: Graphics): Unit = {
     super.paintComponent(graphics)
 
-    println("ImageWidget paintComponent")
+    // println("ImageWidget paintComponent")
 
     graphics.setColor(Color.black)
     graphics.fillRect(0, 0, getWidth, getHeight)
@@ -110,9 +110,7 @@ class WidgetScroller(
   // rebuild the scrolling pane and redraw
   // call after adding or removing widgets
   def rebuild(): Unit = {
-
-    println("WidgetScroller rebuild")
-
+    // println("WidgetScroller rebuild")
     // TODO: change the order of these operations to be more logical
     scrollingSurface.removeAll()
     // the widgets can have different heights, so we don't want gridlayout
@@ -121,8 +119,6 @@ class WidgetScroller(
     val surfaceHeight = widgets.map(_.wy + margin).sum
     scrollingSurface.setPreferredSize(new Dimension(surfaceWidth, surfaceHeight))
     widgets.foreach(widget => {
-      println("adding " + widget.title)
-
       if (selectable && widget.getMouseListeners.length == 0) {
         widget.addMouseListener(new MouseAdapter() {
           override def mouseClicked(event: MouseEvent): Unit = {
@@ -130,7 +126,7 @@ class WidgetScroller(
               widgets(selectedIdx).setSelected(false)
             }
             selectedIdx = widgets.indexOf(widget)
-            println("highlighting widget " + selectedIdx)
+            // println("highlighting widget " + selectedIdx)
             widgets(selectedIdx).setSelected(true)
             WidgetScroller.this.repaint()
           }
@@ -153,7 +149,3 @@ class WidgetScroller(
   }
 
 }
-
-
-
-

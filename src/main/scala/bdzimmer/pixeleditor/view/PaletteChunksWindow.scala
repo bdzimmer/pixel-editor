@@ -63,13 +63,13 @@ class PaletteChunksWindow (
     /////
 
     def draw(): Unit = {
-      println("PaletteChunkUpdater draw " + chunk.name)
+      // println("PaletteChunkUpdater draw '" + chunk.name + "'")
       PaletteWindow.drawPalette(
           image, chunk.value, bitsPerChannel, rows, cols, PaletteChunksWindow.SwatchSize)
     }
 
     def update(): Unit = {
-      println("PaletteChunkUpdater update " + chunk.name)
+      // println("PaletteChunkUpdater update '" + chunk.name + "'")
       draw()
       widget.repaint()
     }

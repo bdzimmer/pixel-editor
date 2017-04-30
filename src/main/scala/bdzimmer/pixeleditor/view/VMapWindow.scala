@@ -233,8 +233,6 @@ class VMapWindow(
   override def buildPanel(): JPanel = {
     val panel = new JPanel()
     panel.setLayout(new BorderLayout())
-    // panel.add(scrollPane, BorderLayout.CENTER)
-    // panel.add(scrollPane.scrollBar, BorderLayout.EAST)
     panel.add(tilesPanel, BorderLayout.CENTER)
     panel.add(buildToolBars(), BorderLayout.NORTH)
     panel
@@ -247,7 +245,6 @@ class VMapWindow(
     val drawGridButton = new JToggleButton("Grid")
     drawGridButton.addChangeListener(new ChangeListener() {
       override def stateChanged(e: ChangeEvent) {
-        println("grid show: "+ drawGridButton.isSelected)
         drawGrid = drawGridButton.isSelected
         updater.update()
       }
@@ -258,7 +255,6 @@ class VMapWindow(
     val drawTileNumbersButton = new JToggleButton("Numbers")
     drawTileNumbersButton.addChangeListener(new ChangeListener() {
       override def stateChanged(e: ChangeEvent) {
-        println("numbers show: "+ drawTileNumbersButton.isSelected)
         drawTileNumbers = drawTileNumbersButton.isSelected
         updater.update()
       }
@@ -270,7 +266,6 @@ class VMapWindow(
     animationButton.addActionListener(new ActionListener() {
       def actionPerformed(e: ActionEvent) {
         animationWindow.foreach(_.dispose())
-
         animationWindow = Some(new AnimationWindow(
             updater.tiles,
             globalPalette,
@@ -338,10 +333,9 @@ class VMapWindow(
 
 
 // TODO: PixelsTilesUpdater should use this
-// TODO: optionally show name
 
 class TilesetImage(
-    entries: Array[VMapEntry],
+    val entries: Array[VMapEntry],
     tiles: Array[Tile],
     globalPalette: Array[Color],
     scale: Int,
@@ -363,12 +357,15 @@ class TilesetImage(
   def draw(drawGrid: Boolean, drawTileNumbers: Boolean): Array[Tile] = {
     indexedGraphics.updateClut()
 
-    // TODO: x and y flips
-    // val entryTiles = entries.map(x => tiles(x.pixelsIdx))
-    // val palOffsets = entries.map(x => new Integer(x.palOffset))
     val entryTiles = entries.map(x => {
-      val tile = tiles(x.pixelsIdx)
-      Tile(tile.bitmap.map(_.map(pixel => pixel + x.palOffset)))
+      var tile = tiles(x.pixelsIdx)
+      if (x.flipY) {
+        tile = Tile(tile.bitmap.reverse)
+      }
+      if (x.flipX) {
+        tile = Tile(tile.bitmap.map(_.reverse))
+      }
+      Tile(tile.bitmap.map(row => row.map(pixel => pixel + x.palOffset)))
     })
 
     TileUtil.drawTileset(
