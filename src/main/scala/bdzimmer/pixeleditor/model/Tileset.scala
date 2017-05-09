@@ -12,9 +12,12 @@ package bdzimmer.pixeleditor.model
 import java.awt.image.{BufferedImage, IndexColorModel}     // scalastyle:ignore illegal.imports
 import java.io.{File, FileInputStream, FileOutputStream}
 
+
 case class TileProperties(value: Int)    // for now
 
+
 case class Tile(bitmap: Array[Array[Int]])
+
 
 case class Palette(start: Int, end: Int, colors: Array[Color], bitsPerChannel: Int) {
 
@@ -39,7 +42,7 @@ case class Palette(start: Int, end: Int, colors: Array[Color], bitsPerChannel: I
     // weird things happen when you try to set a transparent index (extra argument)
     // it seems that it will always be index 0 in a png, but also strange palette
     // shifts happen if it is set to 256. Seems best to not set this for now.
-    new IndexColorModel(8, 256, r, g, b);
+    new IndexColorModel(8, 256, r, g, b)
 
   }
 

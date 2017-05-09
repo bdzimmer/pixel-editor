@@ -246,10 +246,18 @@ public class Map {
    * @return  image representation of the map
    */
   public BufferedImage image(Tileset tiles, Palette palette) {
+    return image(tiles.tiles(), palette);
+  }
+
+
+  public BufferedImage image(Tile[] tiles, Palette palette) {
+
+    int height = tiles[0].bitmap().length;
+    int width = tiles[0].bitmap()[0].length;
 
     BufferedImage mapImage = Tileset.indexedImage(
-        (mlr + 1) * tiles.width(),
-        (mud + 1) * tiles.height(),
+        (mlr + 1) * width,
+        (mud + 1) * height,
         palette, new Color(50, 0, 50));
 
     WritableRaster wr = mapImage.getRaster();
@@ -257,20 +265,20 @@ public class Map {
     for (int i = 0; i <= mud; i++) {
       for (int j = 0; j <= mlr; j++) {
 
-        for (int k = 0; k < tiles.height(); k++) {
+        for (int k = 0; k < height; k++) {
           wr.setPixels(
-              j * tiles.width(), i * tiles.height() + k,
-              tiles.width(), 1,
-              tiles.tiles()[this.map[i][j]].bitmap()[k]);
+              j * width, i * height + k,
+              width, 1,
+              tiles[this.map[i][j]].bitmap()[k]);
         }
 
         if (this.overMap[i][j] > 0) {
-          for (int k = 0; k < tiles.height(); k++) {
-            for (int l = 0; l < tiles.width(); l++) {
-              int curColor = tiles.tiles()[this.overMap[i][j]].bitmap()[k][l];
+          for (int k = 0; k < height; k++) {
+            for (int l = 0; l < width; l++) {
+              int curColor = tiles[this.overMap[i][j]].bitmap()[k][l];
               if (curColor != 255) {
                 wr.setPixels(
-                    j * tiles.width() + l, i * tiles.height() + k,
+                    j * width + l, i * height + k,
                     1, 1,
                     new int[]{curColor});
               }

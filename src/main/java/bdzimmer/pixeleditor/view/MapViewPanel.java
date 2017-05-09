@@ -7,7 +7,9 @@ package bdzimmer.pixeleditor.view;
 
 import bdzimmer.pixeleditor.model.IndexedGraphics;
 import bdzimmer.pixeleditor.model.Map;
+import bdzimmer.pixeleditor.model.Tile;
 import bdzimmer.pixeleditor.model.Tileset;
+import bdzimmer.pixeleditor.model.TileProperties;
 import bdzimmer.pixeleditor.model.Color;
 import bdzimmer.pixeleditor.controller.TileUtil;
 
@@ -23,7 +25,10 @@ public class MapViewPanel extends JPanel {
 
   private IndexedGraphics dosGraphics;
 
-  private Tileset tileset;
+  private Tile[] tiles;
+  private int width;
+  private int height;
+  private TileProperties[] properties;
   private Color[] rgbPalette;
 
   private boolean parallaxEdit = false;
@@ -49,9 +54,11 @@ public class MapViewPanel extends JPanel {
    * @param tileSet       tiles to use when displaying the map
    * @param rgbPalette    palette for displaying the map
    */
-  public MapViewPanel(Map map, Tileset tileset, Color[] rgbPalette) {
+  public MapViewPanel(Map map, Tile[] tiles, TileProperties[] properties, Color[] rgbPalette) {
     this.map = map;
-    this.tileset = tileset;
+
+    setTiles(tiles, properties);
+
     this.rgbPalette = rgbPalette;
 
     dosGraphics = createDosGraphics();
@@ -73,11 +80,11 @@ public class MapViewPanel extends JPanel {
   private IndexedGraphics createDosGraphics() {
 
     IndexedGraphics dg =  new IndexedGraphics(
-        numVerticalTiles * tileset.height(),
-        numHorizontalTiles * tileset.width(),
+        numVerticalTiles * height,
+        numHorizontalTiles * width,
         scale);
 
-    dg.setGridDimensions(tileset.width(), tileset.height());
+    dg.setGridDimensions(width, height);
     dg.setShowGrid(dispGridlines);
     dg.setPalette(rgbPalette);
     dg.updateClut();
@@ -87,7 +94,7 @@ public class MapViewPanel extends JPanel {
 
 
   private void drawMap() {
-    if (this.tileset != null) {
+    if (this.tiles != null) {
       // Draw map on screen.
 
       if (this.parallaxEdit) {
@@ -103,9 +110,9 @@ public class MapViewPanel extends JPanel {
             }
             TileUtil.drawTile(
             	dosGraphics,
-                tileset.tiles()[curTile].bitmap(),
-                j * tileset.width(),
-                i * tileset.height());
+                tiles[curTile].bitmap(),
+                j * width,
+                i * height);
 
           }
         }
@@ -124,15 +131,15 @@ public class MapViewPanel extends JPanel {
               }
               TileUtil.drawTile(
             	  dosGraphics,
-                  tileset.tiles()[curTile].bitmap(),
-                  j * tileset.width(),
-                  i * tileset.height());
+                  tiles[curTile].bitmap(),
+                  j * width,
+                  i * height);
             } else {
               TileUtil.drawTile(
                   dosGraphics,
-                  new int[tileset.height()][tileset.width()],
-                  j * tileset.width(),
-                  i * tileset.height());
+                  new int[height][width],
+                  j * width,
+                  i * height);
             }
           }
         }
@@ -150,9 +157,9 @@ public class MapViewPanel extends JPanel {
               if (curTile > 0) {
                 TileUtil.drawTileTrans(
                     dosGraphics,
-                    tileset.tiles()[curTile].bitmap(),
-                    j * tileset.width(),
-                    i * tileset.height());
+                    tiles[curTile].bitmap(),
+                    j * width,
+                    i * height);
               }
             }
           }
@@ -180,7 +187,7 @@ public class MapViewPanel extends JPanel {
     Graphics dgGraphics = dosGraphics.getImage().getGraphics();
 
     // Bounds drawing
-    if (this.dispBounds && this.tileset != null) {
+    if (this.dispBounds && this.tiles != null) {
 
       dgGraphics.setColor(new java.awt.Color(dosGraphics.getPalettePacked()[255]));
       for (int i = 0; i < 12; i++) {
@@ -195,40 +202,40 @@ public class MapViewPanel extends JPanel {
               curTile = 0;
             }
 
-            if ((tileset.properties()[curTile].value() & 1) == 0) {
+            if ((properties[curTile].value() & 1) == 0) {
               dgGraphics.drawLine(
-                  j * tileset.width()  * scale,
-                  i * tileset.height() * scale + tileset.height() * scale - 1,
-                  j * tileset.width()  * scale + tileset.width()  * scale - 1,
-                  i * tileset.height() * scale + tileset.height() * scale - 1);
+                  j * width  * scale,
+                  i * height * scale + height * scale - 1,
+                  j * width  * scale + width  * scale - 1,
+                  i * height * scale + height * scale - 1);
             }
-            if ((tileset.properties()[curTile].value() & 2) == 0) {
+            if ((properties[curTile].value() & 2) == 0) {
               dgGraphics.drawLine(
-                  j * tileset.width()  * scale,
-                  i * tileset.height() * scale,
-                  j * tileset.width()  * scale,
-                  i * tileset.height() * scale + tileset.height() * scale - 1);
+                  j * width  * scale,
+                  i * height * scale,
+                  j * width  * scale,
+                  i * height * scale + height * scale - 1);
             }
-            if ((tileset.properties()[curTile].value() & 4) == 0) {
+            if ((properties[curTile].value() & 4) == 0) {
               dgGraphics.drawLine(
-                  j * tileset.width()  * scale + tileset.width()  * scale - 1,
-                  i * tileset.height() * scale,
-                  j * tileset.width()  * scale + tileset.width()  * scale - 1,
-                  i * tileset.height() * scale + tileset.height() * scale - 1);
+                  j * width  * scale + width  * scale - 1,
+                  i * height * scale,
+                  j * width  * scale + width  * scale - 1,
+                  i * height * scale + height * scale - 1);
             }
-            if ((tileset.properties()[curTile].value() & 8) == 0) {
+            if ((properties[curTile].value() & 8) == 0) {
               dgGraphics.drawLine(
-                  j * tileset.width()  * scale,
-                  i * tileset.height() * scale,
-                  j * tileset.width()  * scale + tileset.width()  * scale - 1,
-                  i * tileset.height() * scale);
+                  j * width  * scale,
+                  i * height * scale,
+                  j * width  * scale + width  * scale - 1,
+                  i * height * scale);
             }
-            if ((tileset.properties()[curTile].value() & 16) != 0) {
+            if ((properties[curTile].value() & 16) != 0) {
               dgGraphics.drawLine(
-                  j * tileset.width()  * scale,
-                  i * tileset.height() * scale,
-                  j * tileset.width()  * scale + tileset.width()  * scale - 1,
-                  i * tileset.height() * scale + tileset.height() * scale - 1);
+                  j * width  * scale,
+                  i * height * scale,
+                  j * width  * scale + width * scale - 1,
+                  i * height * scale + height * scale - 1);
             }
 
           }
@@ -247,40 +254,40 @@ public class MapViewPanel extends JPanel {
             } else {
               curTile = 0;
             }
-            if ((tileset.properties()[curTile].value() & 1) == 0) {
+            if ((properties[curTile].value() & 1) == 0) {
               dgGraphics.drawLine(
-                  j * tileset.width()  * scale,
-                  i * tileset.height() * scale + tileset.height() * scale - 1,
-                  j * tileset.width()  * scale + tileset.width()  * scale - 1,
-                  i * tileset.height() * scale + tileset.height() * scale - 1);
+                  j * width  * scale,
+                  i * height * scale + height * scale - 1,
+                  j * width  * scale + width  * scale - 1,
+                  i * height * scale + height * scale - 1);
             }
-            if ((tileset.properties()[curTile].value() & 2) == 0) {
+            if ((properties[curTile].value() & 2) == 0) {
               dgGraphics.drawLine(
-                  j * tileset.width()  * scale,
-                  i * tileset.height() * scale,
-                  j * tileset.width()  * scale,
-                  i * tileset.height() * scale + tileset.height() * scale - 1);
+                  j * width  * scale,
+                  i * height * scale,
+                  j * width  * scale,
+                  i * height * scale + height * scale - 1);
             }
-            if ((tileset.properties()[curTile].value() & 4) == 0) {
+            if ((properties[curTile].value() & 4) == 0) {
               dgGraphics.drawLine(
-                  j * tileset.width()  * scale + tileset.width()  * scale - 1,
-                  i * tileset.height() * scale,
-                  j * tileset.width()  * scale + tileset.width()  * scale - 1,
-                  i * tileset.height() * scale + tileset.height() * scale - 1);
+                  j * width  * scale + width  * scale - 1,
+                  i * height * scale,
+                  j * width  * scale + width  * scale - 1,
+                  i * height * scale + height * scale - 1);
             }
-            if ((tileset.properties()[curTile].value() & 8) == 0) {
+            if ((properties[curTile].value() & 8) == 0) {
               dgGraphics.drawLine(
-                  j * tileset.width()  * scale,
-                  i * tileset.height() * scale,
-                  j * tileset.width()  * scale + tileset.width()  * scale - 1,
-                  i * tileset.height() * scale);
+                  j * width  * scale,
+                  i * height * scale,
+                  j * width  * scale + width  * scale - 1,
+                  i * height * scale);
             }
-            if ((tileset.properties()[curTile].value() & 16) != 0) {
+            if ((properties[curTile].value() & 16) != 0) {
               dgGraphics.drawLine(
-                  j * tileset.width()  * scale,
-                  i * tileset.height() * scale,
-                  j * tileset.width()  * scale + tileset.width()  * scale - 1,
-                  i * tileset.height() * scale + tileset.height() * scale - 1);
+                  j * width  * scale,
+                  i * height * scale,
+                  j * width  * scale + width  * scale - 1,
+                  i * height * scale + height * scale - 1);
             }
           }
         }
@@ -354,8 +361,11 @@ public class MapViewPanel extends JPanel {
     this.parallaxEdit = parallaxEdit;
   }
 
-  public void setTileset(Tileset tileset) {
-    this.tileset = tileset;
+  public void setTiles(Tile[] tiles, TileProperties[] properties) {
+    this.tiles = tiles;
+    this.properties = properties;
+    this.width = tiles[0].bitmap()[0].length;
+    this.height = tiles[0].bitmap().length;
   }
 
   public IndexedGraphics getDosGraphics() {

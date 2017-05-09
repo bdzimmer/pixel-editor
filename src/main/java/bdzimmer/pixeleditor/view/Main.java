@@ -121,7 +121,10 @@ public class Main extends CommonWindow {
         contentDir + File.separator + ContentStructure.MapDir(),
         map,
         mapFileName,
-        tileWindow);
+        globalPalette,
+        tileWindow.getTileSet().tiles(),
+        tileWindow.getTileSet().properties(),
+        tileWindow.getTileContainer());
 
     tileWindow.toFront();
 

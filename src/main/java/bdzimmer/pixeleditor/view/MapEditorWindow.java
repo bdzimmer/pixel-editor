@@ -9,9 +9,11 @@ package bdzimmer.pixeleditor.view;
 
 import bdzimmer.pixeleditor.model.Map;
 import bdzimmer.pixeleditor.model.Palette;
-import bdzimmer.pixeleditor.model.Tileset;
+import bdzimmer.pixeleditor.model.Tile;
+import bdzimmer.pixeleditor.model.TileProperties;
+import bdzimmer.pixeleditor.model.TileContainer;
+import bdzimmer.pixeleditor.model.Color;
 import bdzimmer.pixeleditor.view.MapViewPanel;
-import bdzimmer.pixeleditor.view.TilesEditorWindow;
 
 import java.awt.Graphics;
 import java.awt.event.ActionEvent;
@@ -51,7 +53,16 @@ public class MapEditorWindow extends CommonWindow {
 
   private Map map;
   public String mapFileName;
-  private final TilesEditorWindow tilesEditorWindow;
+
+
+  // private final TilesEditorWindow tilesEditorWindow;
+
+  private final Color[] palette;
+  private final Tile[] tiles;
+  private final TileProperties[] properties;
+  private final TileContainer tileContainer;
+
+
 
   private MapViewPanel mapViewPanel;
 
@@ -62,25 +73,24 @@ public class MapEditorWindow extends CommonWindow {
   private int overlayEdit;
 
 
-  /**
-   * Create a new MapEditorWindow.
-   *
-   * @param mapsDir       main content directory
-   * @param map           Map to display
-   * @param fileName      file name of map to load
-   * @param tileSet       Tiles object to use
-   * @param rgbPalette    2d int array of palette to update the view with
-   */
   public MapEditorWindow(
       String mapsDir,
       Map map,
       String fileName,
-      TilesEditorWindow tilesEditorWindow) { // constructor
+      Color[] palette,
+      Tile[] tiles,
+      TileProperties[] properties,
+      TileContainer tileContainer) { // constructor
 
     this.mapsDir = mapsDir;
     this.map = map;
     this.mapFileName = fileName;
-    this.tilesEditorWindow = tilesEditorWindow;
+
+    // this.tilesEditorWindow = tilesEditorWindow;
+    this.palette = palette;
+    this.tiles = tiles;
+    this.properties = properties;
+    this.tileContainer = tileContainer;
 
     updateTitle();
 
@@ -123,11 +133,11 @@ public class MapEditorWindow extends CommonWindow {
 
     if (!ae.isMetaDown()) {
       if (overlayEdit == 0) {
-        map.map[ctud][ctlr] = tilesEditorWindow.getTileContainer().getTileIndex();
+        map.map[ctud][ctlr] = tileContainer.getTileIndex();
       } else if (overlayEdit == 1) {
-        map.overMap[ctud][ctlr] = tilesEditorWindow.getTileContainer().getTileIndex();
+        map.overMap[ctud][ctlr] = tileContainer.getTileIndex();
       } else if (overlayEdit == 2) {
-        map.paraMap[ctud][ctlr] = tilesEditorWindow.getTileContainer().getTileIndex();
+        map.paraMap[ctud][ctlr] = tileContainer.getTileIndex();
       }
       repaint();
 
@@ -140,10 +150,13 @@ public class MapEditorWindow extends CommonWindow {
       } else if (overlayEdit == 2) {
         selectedTile = map.paraMap[ctud][ctlr];
       }
-      if (selectedTile > tilesEditorWindow.getTileSet().tiles().length) {
-        selectedTile = tilesEditorWindow.getTileSet().tiles().length;
+      if (selectedTile > tiles.length) {
+        selectedTile = tiles.length;
       }
-      tilesEditorWindow.selectTile(selectedTile);
+
+      // TODO: replace this functionality
+      // tilesEditorWindow.selectTile(selectedTile);
+      tileContainer.setTileIndex(selectedTile);
     }
 
   }
@@ -274,7 +287,7 @@ public class MapEditorWindow extends CommonWindow {
   // --------------------------------------------------------
 
   private void updateGraphics() {
-    mapViewPanel.setTileset(tilesEditorWindow.getTileSet());
+    mapViewPanel.setTiles(tiles, properties);
     mapViewPanel.updateGraphics();
     pack();
     repaint();
@@ -348,11 +361,9 @@ public class MapEditorWindow extends CommonWindow {
 
     fullMap.addActionListener(new ActionListener() {
       public void actionPerformed(ActionEvent ae) {
-        Tileset tiles = MapEditorWindow.this.tilesEditorWindow.getTileSet();
-        Palette palette = Tileset.extractPalette(
-            tiles.palettes().apply(0),
-            MapEditorWindow.this.tilesEditorWindow.getDosGraphics().getPalette());
-        new ImageWindow(MapEditorWindow.this.map.image(tiles, palette));
+        // TODO: defaults to 6 bits per channel
+        Palette p = new Palette(0, palette.length, palette, 6);
+        new ImageWindow(MapEditorWindow.this.map.image(tiles, p));
       }
     });
 
@@ -460,10 +471,7 @@ public class MapEditorWindow extends CommonWindow {
   @Override
   protected JPanel buildPanel() {
 
-    JPanel panel = new MapViewPanel(
-        this.map,
-        this.tilesEditorWindow.getTileSet(),
-        this.tilesEditorWindow.getDosGraphics().getPalette());
+    JPanel panel = new MapViewPanel(map, tiles, properties, palette);
 
     panel.setToolTipText("<html>right click: grab tile<br />left click: set tile<br />mouse wheel: zoom<br />arrow keys: scroll</html>");
 
