@@ -50,7 +50,7 @@ class VMapsWindow(
   override def editAction(idx: Int): Unit = {
      val item = items(idx)
      val editor = new VMapWindow(
-         item.name, item.value, pixels, pixelsUpdater, paletteChunks,
+         item.name + " - VMap", item.value, pixels, pixelsUpdater, paletteChunks,
          globalPalette, globalPaletteUpdater, tileContainer, zoomWindow, settings)
      editor.setLocationRelativeTo(null) // TODO: set location from saved window location settings
      editor.setVisible(true)

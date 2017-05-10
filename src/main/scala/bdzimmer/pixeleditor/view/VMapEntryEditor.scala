@@ -75,7 +75,7 @@ class VMapEntryEditor(
       println("selected vmap entry: " + entry)
 
       pixelsIdxField.setText(entry.pixelsIdx.toString)
-      palOffsetSelector.setSelectedItem(entry.palOffset)
+      palOffsetSelector.setSelectedIndex(entry.palOffset / settings.colorsPerTile)
       flipXButton.setSelected(entry.flipX)
       flipYButton.setSelected(entry.flipY)
 
