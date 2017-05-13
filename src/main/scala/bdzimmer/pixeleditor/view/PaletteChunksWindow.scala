@@ -16,7 +16,7 @@ class PaletteChunksWindow (
     title: String,
     items: Buffer[Named[Array[Color]]],
     settings: Settings)
-  extends BufferNamedWindow[Array[Color]](title, items, settings) {
+  extends BufferNamedWindow[Array[Color]](title, items) {
 
 
   override def buildUpdater(item: Named[Array[Color]]): WidgetUpdater = {

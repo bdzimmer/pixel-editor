@@ -15,8 +15,7 @@ import bdzimmer.pixeleditor.model.TileCollectionModel.{Named, Settings}
 
 abstract class BufferNamedWindow[T](
     title: String,
-    val items: Buffer[Named[T]],
-    settings: Settings) extends CommonWindow {
+    val items: Buffer[Named[T]]) extends CommonWindow {
 
   setTitle(title)
 

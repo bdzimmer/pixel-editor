@@ -89,7 +89,12 @@ class WidgetScroller(
     widgets: Buffer[ImageWidget],
     selectable: Boolean) extends JScrollPane {
 
-  private var selectedIdx = -1
+  private var selectedIdx = if (widgets.length == 0) {
+    -1
+  } else {
+    widgets(0).setSelected(true)
+    0
+  }
 
   val margin = 5
   val scrollingSurface = new JPanel()

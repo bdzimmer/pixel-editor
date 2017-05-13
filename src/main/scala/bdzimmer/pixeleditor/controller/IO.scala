@@ -20,6 +20,44 @@ object IO {
 
   val Trimmer = """^(.*?)\s*$""".r
 
+  case class TileCollectionFiles(filename: String) {
+    val settingsFile      = new File(filename / "settings")
+    val pixelsFile        = new File(filename / "pixels")
+    val vMapsFile         = new File(filename / "vmaps")
+    val paletteChunksFile = new File(filename / "palettechunks")
+  }
+
+
+  def readCollection(file: File): TileCollection = {
+
+    val tcf = TileCollectionFiles(file.getAbsolutePath)
+
+    val settings = IO.readSettings(tcf.settingsFile)
+    val pixels = IO.readPixels(tcf.pixelsFile, settings)
+    val vMaps = IO.readVMaps(tcf.vMapsFile, settings)
+    val paletteChunks = IO.readPaletteChunks(tcf.paletteChunksFile)
+
+    new TileCollection(
+      settings,
+      pixels,
+      vMaps,
+      paletteChunks
+    )
+
+  }
+
+
+  def writeCollection(file: File, tileCollection: TileCollection): Unit = {
+
+    val tcf = TileCollectionFiles(file.getAbsolutePath)
+    file.mkdirs()
+
+    IO.writeSettings(tcf.settingsFile, tileCollection.settings)
+    IO.writePixels(tcf.pixelsFile, tileCollection.pixels, tileCollection.settings)
+    IO.writeVMaps(tcf.vMapsFile, tileCollection.vmaps, tileCollection.settings)
+    IO.writePaletteChunks(tcf.paletteChunksFile, tileCollection.paletteChunks)
+  }
+
 
   def getSetting(sm: Map[String, String], name: String, default: Int): Int = {
     sm.get(name).map(_.toIntSafe(default)).getOrElse(default)

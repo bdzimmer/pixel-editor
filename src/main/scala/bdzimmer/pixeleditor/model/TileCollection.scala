@@ -9,7 +9,7 @@ import scala.collection.mutable.ArrayBuffer
 
 import java.awt.Image
 
-import bdzimmer.pixeleditor.view.PaletteChunksWindow
+import bdzimmer.pixeleditor.view.MockupWindow
 import bdzimmer.pixeleditor.controller.TileUtil
 
 import TileCollectionModel.NamedUtils
@@ -65,7 +65,7 @@ object TileCollectionModel {
     chunkIdxs: Buffer[Int]
   )
 
-  case class Named[T](name: String, value: T)
+  case class Named[+T](name: String, value: T)
 
   implicit class NamedUtils[T](val x: T) extends AnyVal {
     def named(s: String): Named[T] = {
@@ -120,7 +120,9 @@ object Experiment {
     //     UIManager.getSystemLookAndFeelClassName())
 
     new TileCollectionWindow(
-        "Untitled", tc, System.getProperty("user.dir")).setVisible(true)
+        "Untitled", tc, System.getProperty("user.dir"), "untitled").setVisible(true)
+
+    // new MockupWindow("Mockups", System.getProperty("user.dir"))
 
   }
 }

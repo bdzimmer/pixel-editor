@@ -23,7 +23,7 @@ class VMapsWindow(
     tileContainer: TileContainer,
     zoomWindow: ZoomedTileWindow,
     settings: Settings)
-  extends BufferNamedWindow[VMap](title, items, settings) {
+  extends BufferNamedWindow[VMap](title, items) {
 
 
   override def buildUpdater(item: Named[VMap]): WidgetUpdater = {

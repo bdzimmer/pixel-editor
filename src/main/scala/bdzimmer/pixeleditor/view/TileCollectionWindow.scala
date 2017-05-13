@@ -15,33 +15,22 @@ import scala.collection.mutable.Buffer
 import bdzimmer.pixeleditor.model.TileOptions
 import bdzimmer.pixeleditor.model.TileCollectionModel._
 import bdzimmer.pixeleditor.model.{Color, TileContainer, TileCollectionModel}
-import bdzimmer.pixeleditor.controller.{IO, PalUtil}
+import bdzimmer.pixeleditor.controller.{IO, PalUtil, TileUtil}
 
 import bdzimmer.util.StringUtils._
 import bdzimmer.util.PropertiesWrapper
 
 
-// TODO: this probably belongs in IO or somewhere similar
-case class TileCollectionFiles(filename: String) {
-  val settingsFile      = new File(filename / "settings")
-  val pixelsFile        = new File(filename / "pixels")
-  val vMapsFile         = new File(filename / "vmaps")
-  val paletteChunksFile = new File(filename / "palettechunks")
-}
-
-
 class TileCollectionWindow(
     var name: String,
     var tileCollection: TileCollection,
-    var workingDirname: String) extends CommonWindow {
+    var workingDirname: String,
+    var filename: String) extends CommonWindow {
 
   setTitle(name + " - Tile Collection")
 
   val tileContainer = new TileContainer
-
-  var filename = ""
-
-  var globalPalette: Array[Color] = null
+  val globalPalette = TileUtil.colorArray(tileCollection.settings.paletteSize)
 
   var globalPaletteWindow: PaletteWindow = null
   var paletteChunksWindow: PaletteChunksWindow = null
@@ -108,21 +97,9 @@ class TileCollectionWindow(
 
     saveWindowLocations()
 
-    name = new File(filename).getName
-
-    val tcf = TileCollectionFiles(filename)
-
-    val settings = IO.readSettings(tcf.settingsFile)
-    val pixels = IO.readPixels(tcf.pixelsFile, settings)
-    val vMaps = IO.readVMaps(tcf.vMapsFile, settings)
-    val paletteChunks = IO.readPaletteChunks(tcf.paletteChunksFile)
-
-    tileCollection = new TileCollection(
-      settings,
-      pixels,
-      vMaps,
-      paletteChunks
-    )
+    val file = new File(filename)
+    IO.readCollection(file)
+    name = file.getName
 
     setTitle(name + " - Tile Collection")
     initWindows()
@@ -134,15 +111,10 @@ class TileCollectionWindow(
 
     saveWindowLocations()
 
-    val tcf = TileCollectionFiles(filename)
     val outFile = new File(filename)
     name = outFile.getName
-    outFile.mkdirs()
 
-    IO.writeSettings(tcf.settingsFile, tileCollection.settings)
-    IO.writePixels(tcf.pixelsFile, tileCollection.pixels, tileCollection.settings)
-    IO.writeVMaps(tcf.vMapsFile, tileCollection.vmaps, tileCollection.settings)
-    IO.writePaletteChunks(tcf.paletteChunksFile, tileCollection.paletteChunks)
+    IO.writeCollection(outFile, tileCollection)
 
     setTitle(name + " - Tile Collection")
 
@@ -215,7 +187,11 @@ class TileCollectionWindow(
     })
 
 
-    globalPalette = (0 until tileCollection.settings.paletteSize).map(_ => Color(0, 0, 0)).toArray
+    for (i <- 0 until tileCollection.settings.paletteSize) {
+      globalPalette(i) = Color(0, 0, 0);
+    }
+
+    // globalPalette = (0 until tileCollection.settings.paletteSize).map(_ => Color(0, 0, 0)).toArray
 
     globalPaletteWindow = new PaletteWindow(
       name + " - Global Palette", globalPalette, tileCollection.settings.bitsPerChannel, null)
@@ -349,7 +325,7 @@ class TileCollectionWindow(
     val jmOpen = new JMenuItem("Open")
     jmOpen.addActionListener(new ActionListener() {
       def actionPerformed(ae: ActionEvent) {
-        fileChooser(workingDirname, save = false).foreach({case (wd, fn) => {
+        TileCollectionWindow.fileChooser(workingDirname, save = false).foreach({case (wd, fn) => {
           readCollection(wd / fn)
           workingDirname = wd
           filename       = fn
@@ -374,7 +350,7 @@ class TileCollectionWindow(
     val jmSaveAs = new JMenuItem("Save As")
     jmSaveAs.addActionListener(new ActionListener() {
       def actionPerformed(ae: ActionEvent) {
-        fileChooser(workingDirname, save = true).foreach({case (wd, fn) => {
+        TileCollectionWindow.fileChooser(workingDirname, save = true).foreach({case (wd, fn) => {
           writeCollection(wd / fn)
           workingDirname = wd
           filename       = fn
@@ -385,7 +361,7 @@ class TileCollectionWindow(
     val jmImport = new JMenuItem("Import")
     jmImport.addActionListener(new ActionListener() {
       def actionPerformed(ae: ActionEvent) {
-        fileChooser(workingDirname, save = false).foreach({case (wd, fn) =>  {
+        TileCollectionWindow.fileChooser(workingDirname, save = false).foreach({case (wd, fn) =>  {
           importCollection(wd / fn)
           // workingDirname = wd
           // filename       = fn + "_update"
@@ -477,10 +453,24 @@ class TileCollectionWindow(
   }
 
 
-  ////
+  def updateMemoryUsageDisplay() {
+    System.gc()
+    val runtime = Runtime.getRuntime()
+    val mb = 1024 * 1024;
+    val totalMemory = runtime.totalMemory() / mb
+    val freeMemory  = runtime.freeMemory() / mb
+    // val maxMemory   = runtime.maxMemory()  / mb
+    statusBar.update((totalMemory - freeMemory) + " / " + totalMemory + " MB", "", "")
+  }
+
+
+}
+
+
+object TileCollectionWindow {
 
   // TODO: put this filechooser code somewhere more general
-  private def fileChooser(dirname: String, save: Boolean): Option[(String, String)] = {
+  def fileChooser(dirname: String, save: Boolean): Option[(String, String)] = {
 
     val jfc = new JFileChooser()
     jfc.setCurrentDirectory(new File(dirname))
@@ -506,17 +496,5 @@ class TileCollectionWindow(
     }
 
   }
-
-
-  def updateMemoryUsageDisplay() {
-    System.gc()
-    val runtime = Runtime.getRuntime()
-    val mb = 1024 * 1024;
-    val totalMemory = runtime.totalMemory() / mb
-    val freeMemory  = runtime.freeMemory() / mb
-    // val maxMemory   = runtime.maxMemory()  / mb
-    statusBar.update((totalMemory - freeMemory) + " / " + totalMemory + " MB", "", "")
-  }
-
 
 }
