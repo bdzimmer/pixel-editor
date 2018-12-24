@@ -6,14 +6,16 @@ package bdzimmer.pixeleditor.model
 
 import org.scalatest.FunSuite
 import java.io.File
-import javax.imageio.ImageIO
 
-import bdzimmer.util.StringUtils._
+import javax.imageio.ImageIO
 
 import bdzimmer.pixeleditor.controller.OldTilesetLoader
 
+import bdzimmer.util.StringUtils._
+import bdzimmer.util.TempDirectory
 
-class TilesetSuite extends FunSuite {
+
+class TilesetSuite extends FunSuite with TempDirectory {
 
   val resourceDir = getClass.getResource("/pixel").getPath
 
@@ -21,9 +23,9 @@ class TilesetSuite extends FunSuite {
   test("load and save using Tileset") {
 
     val inputFilename = resourceDir / "amex.til"
-    val outputFilename = "amex_new.til"
-    val imageFilename = new File("amex_new.png")
-    val imageRGBFilename = new File("amex_new_rgb.png")
+    val outputFilename = tempDirname / "amex_new.til"
+    val imageFilename = new File(tempDirname / "amex_new.png")
+    val imageRGBFilename = new File(tempDirname / "amex_new_rgb.png")
 
     val tileAttrs = TileOptions.types.get("Tiles").get  // I don't even care
 
