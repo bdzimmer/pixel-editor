@@ -19,7 +19,7 @@ object SettingsDialog {
   val Defaults = List(
     Settings(5, 16,  16, 16, 16, 256, 16, 16) named "EGA",
     Settings(5, 16,   4, 16, 16, 128, 16, 16) named "NES",
-    Settings(5,  4,   4, 16, 16, 128, 16, 16) named "Gameboy",
+    Settings(5,  4,   4,  8,  8, 256, 16, 16) named "Gameboy",
     Settings(5, 256, 16, 16, 16, 256, 16, 16) named "SNES"
   )
 

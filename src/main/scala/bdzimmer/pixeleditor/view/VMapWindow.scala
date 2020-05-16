@@ -7,10 +7,9 @@ package bdzimmer.pixeleditor.view
 
 import scala.collection.mutable.Buffer
 
-import java.awt.{BorderLayout, GridLayout}
+import java.awt.GridLayout
 import java.awt.event.{ActionEvent, ActionListener, MouseAdapter, MouseEvent}
-import java.awt.image.BufferedImage
-import javax.swing.{JButton, JComboBox, JOptionPane, JPanel, JToolBar, JToggleButton, JSeparator, WindowConstants, SwingConstants}
+import javax.swing.{JButton, JComboBox, JOptionPane, JPanel, JToolBar, JToggleButton, WindowConstants}
 import javax.swing.event.{ChangeListener, ChangeEvent}
 
 import java.awt.event.MouseWheelEvent
@@ -100,11 +99,13 @@ class VMapWindow(
 
   def handleClicks(event: MouseEvent, allowCopy: Boolean) = {
 
-    val selectedIdxAny =
-        (event.getY() / (settings.tileHeight * scale)) * settings.viewTileCols +
-        (event.getX() / (settings.tileWidth * scale))
+    // get entry index and ensure valid
 
     val prevVMapEntryIdx = vMapEntryIdx
+
+    val selectedIdxAny =
+      (event.getY / (settings.tileHeight * scale)) * settings.viewTileCols +
+        (event.getX / (settings.tileWidth * scale))
 
     vMapEntryIdx = if (selectedIdxAny >= pixels.tiles.length) {
       pixels.tiles.length - 1;
@@ -112,13 +113,21 @@ class VMapWindow(
       selectedIdxAny
     }
 
-    val pixelsIdx = vMap.entries(vMapEntryIdx).pixelsIdx
+    println("clicked index: " + vMapEntryIdx)
 
-    println(vMapEntryIdx + ": " + vMap.entries(vMapEntryIdx))
+    // copy or update
 
-    if (event.isMetaDown()) {
+    if (event.isMetaDown()) { // right click
+
+      val pixelsIdx = vMap.entries(vMapEntryIdx).pixelsIdx
+
+      println("right clicked vmap entry " + vMapEntryIdx + ": " + vMap.entries(vMapEntryIdx))
+
+      // show the tile in the zoomedtilewindow
       selectTile(pixelsIdx)
+
       editor.selectEntry(vMapEntryIdx)
+
       // show in animation window
       animationWindow.foreach(x => {
         if (x.isVisible) {
@@ -126,9 +135,29 @@ class VMapWindow(
           x.toFront
         }
       })
-    } else  if (allowCopy) {
-      vMap.entries(vMapEntryIdx) = vMap.entries(prevVMapEntryIdx).copy()
+
+    } else if (allowCopy) { // left click
+
+      println("left clicked vmap entry " + vMapEntryIdx + ": " + vMap.entries(vMapEntryIdx))
+
+      val dstIndex = vMapEntryIdx
+
+      if (tileContainer.getSource.equals(this)) {
+        val srcIndex = prevVMapEntryIdx
+        println("copying vmap entry " + srcIndex + " -> " + dstIndex)
+        vMap.entries(dstIndex) = vMap.entries(srcIndex).copy()
+      } else {
+        val srcIndex = tileContainer.getTileIndex
+        println("setting pixels index of entry " + dstIndex + " to " + srcIndex)
+        vMap.entries(dstIndex) = vMap.entries(dstIndex).copy(pixelsIdx = srcIndex)
+      }
+
       updater.update()
+
+    }
+
+    for (idx <- 0 until 16) {
+      println("\t" + idx + ":" + vMap.entries(idx))
     }
 
     statusBar.update(0, 0, "" + vMapEntryIdx)
@@ -141,7 +170,8 @@ class VMapWindow(
   def selectTile(pixelsIdx: Int): Unit = {
 
     // set the current tile
-    tileContainer.setTileIndex(pixelsIdx);
+    tileContainer.setSource(this)
+    tileContainer.setTileIndex(pixelsIdx)
     val bitmap = pixels.tiles(pixelsIdx).bitmap
     tileContainer.setTileBitmap(bitmap)
     curPalOffset = pixels.defaultPalOffsets(pixelsIdx)

@@ -71,7 +71,7 @@ class PixelsWindow(
       // right click grab tile
       selectTile(pixelsIdx)
 
-    } else  if (allowCopy) {
+    } else if (allowCopy) {
 
       // TODO: use drag / drop functionality for this???
 
@@ -85,6 +85,7 @@ class PixelsWindow(
       }
       pixels.defaultPalOffsets(pixelsIdx) = curPalOffset
 
+      tileContainer.setSource(this)
       tileContainer.setTileIndex(pixelsIdx)
       tileContainer.setTileBitmap(pixels.tiles(pixelsIdx).bitmap)
 
@@ -102,6 +103,7 @@ class PixelsWindow(
   def selectTile(pixelsIdx: Int): Unit = {
 
     // set the current tile
+    tileContainer.setSource(this)
     tileContainer.setTileIndex(pixelsIdx);
     val bitmap = pixels.tiles(pixelsIdx).bitmap
     tileContainer.setTileBitmap(bitmap)

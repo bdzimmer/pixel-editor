@@ -65,7 +65,6 @@ class TileCollectionWindow(
   build(WindowConstants.EXIT_ON_CLOSE)
   packAndShow(false)
 
-  /*
   for {
     wd <- recentFiles("workingdir")
     fn <- recentFiles("workingfile")
@@ -77,7 +76,6 @@ class TileCollectionWindow(
   if (workingDirname.length > 0 && filename.length > 0) {
      readCollection(workingDirname / filename)
   }
-  */
 
   //////
 
@@ -91,14 +89,13 @@ class TileCollectionWindow(
   }
 
 
-  // TODO: move actual reading and writing functionality to IO
-
   def readCollection(filename: String): Unit = {
 
     saveWindowLocations()
 
     val file = new File(filename)
-    IO.readCollection(file)
+    tileCollection = IO.readCollection(file)
+
     name = file.getName
 
     setTitle(name + " - Tile Collection")

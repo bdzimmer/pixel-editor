@@ -31,19 +31,20 @@ class VMapEntryEditor(
     val pixelsIdxField = new JTextField("0")
     pixelsIdxField.getDocument.addDocumentListener(new DocumentChangeListener() {
       override def changeUpdate(e: DocumentEvent) {
-        println("pixelsIdx")
+        println("pixelsIdx updated..." + vMapEntryIdx)
         val pixelsIdx = pixelsIdxField.getText.toIntSafe(0)
         entries(vMapEntryIdx) = entries(vMapEntryIdx).copy(pixelsIdx = pixelsIdx)
         vMapWindowUpdater.update()
       }
     });
 
+    // TODO: this should probably be more configurable
     val offsetChoices = (0 to 16).map(x => x * settings.colorsPerTile).toList
     val palOffsetSelector = SettingsDialog.selector(offsetChoices, 0)
     palOffsetSelector.addItemListener(new ItemListener() {
       override def itemStateChanged(e: ItemEvent) {
         if (palOffsetSelector.getSelectedIndex > -1) {
-          println("palOffset: " + offsetChoices(palOffsetSelector.getSelectedIndex))
+          println("palOffset updated to: " + offsetChoices(palOffsetSelector.getSelectedIndex))
           val palOffset = offsetChoices(palOffsetSelector.getSelectedIndex)
           entries(vMapEntryIdx) = entries(vMapEntryIdx).copy(palOffset = palOffset)
           vMapWindowUpdater.update()
@@ -70,9 +71,11 @@ class VMapEntryEditor(
     // TODO: attribs
 
     def selectEntry(vMapEntryIdx: Int): Unit = {
+
       this.vMapEntryIdx = vMapEntryIdx
-      val entry = entries(this.vMapEntryIdx)
-      println("selected vmap entry: " + entry)
+
+      val entry = entries(vMapEntryIdx)
+      println("selected vmap entry " + vMapEntryIdx  + ": " + entry)
 
       pixelsIdxField.setText(entry.pixelsIdx.toString)
       palOffsetSelector.setSelectedIndex(entry.palOffset / settings.colorsPerTile)

@@ -37,7 +37,7 @@ object IO {
     val vMaps = IO.readVMaps(tcf.vMapsFile, settings)
     val paletteChunks = IO.readPaletteChunks(tcf.paletteChunksFile)
 
-    new TileCollection(
+    TileCollection(
       settings,
       pixels,
       vMaps,

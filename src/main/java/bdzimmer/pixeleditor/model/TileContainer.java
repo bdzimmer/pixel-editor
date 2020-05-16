@@ -12,6 +12,7 @@ public class TileContainer {
   // this is not final because it can change size
   private int[][] tileBitmap = new int[16][16];
   private int tileIndex;
+  private Object object;
 
   // getters and setters
 
@@ -38,5 +39,9 @@ public class TileContainer {
   public int getWidth() {
     return this.tileBitmap[0].length;
   }
+
+  public Object getSource() {return this.object;}
+
+  public void setSource(Object object) {this.object = object;}
 
 }
