@@ -60,8 +60,9 @@ class VMapWindow(
 
   var selectedPalConfIdx = 0
   var palConfIdx = 0
-  var vMapEntryIdx = 0
 
+  // var vMapEntryIdx = 0
+  var prevVMapEntryIdx = 0
 
 
   tilesPanel.addMouseWheelListener(new MouseWheelListener() {
@@ -101,13 +102,11 @@ class VMapWindow(
 
     // get entry index and ensure valid
 
-    val prevVMapEntryIdx = vMapEntryIdx
-
     val selectedIdxAny =
       (event.getY / (settings.tileHeight * scale)) * settings.viewTileCols +
         (event.getX / (settings.tileWidth * scale))
 
-    vMapEntryIdx = if (selectedIdxAny >= pixels.tiles.length) {
+    val vMapEntryIdx = if (selectedIdxAny >= pixels.tiles.length) {
       pixels.tiles.length - 1;
     } else {
       selectedIdxAny
@@ -117,7 +116,7 @@ class VMapWindow(
 
     // copy or update
 
-    if (event.isMetaDown()) { // right click
+    if (event.isMetaDown) { // right click
 
       val pixelsIdx = vMap.entries(vMapEntryIdx).pixelsIdx
 
@@ -126,6 +125,7 @@ class VMapWindow(
       // show the tile in the zoomedtilewindow
       selectTile(pixelsIdx)
 
+      // update the selected entry
       editor.selectEntry(vMapEntryIdx)
 
       // show in animation window
@@ -156,11 +156,14 @@ class VMapWindow(
 
     }
 
-    for (idx <- 0 until 16) {
-      println("\t" + idx + ":" + vMap.entries(idx))
-    }
+    // for debugging
+//    for (idx <- 0 until 16) {
+//      println("\t" + idx + ":" + vMap.entries(idx))
+//    }
 
     statusBar.update(0, 0, "" + vMapEntryIdx)
+
+    prevVMapEntryIdx = vMapEntryIdx
 
   }
 
@@ -309,7 +312,7 @@ class VMapWindow(
         animationWindow = Some(new AnimationWindow(
             updater.tiles,
             globalPalette,
-            vMapEntryIdx))
+            prevVMapEntryIdx))
         animationWindow.foreach(_.setLocationRelativeTo(VMapWindow.this))
       }
     });

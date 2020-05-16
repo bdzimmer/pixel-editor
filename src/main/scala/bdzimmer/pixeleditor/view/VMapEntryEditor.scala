@@ -3,17 +3,11 @@
 package bdzimmer.pixeleditor.view
 
 
-import scala.collection.mutable.Buffer
-
-import java.awt.{BorderLayout}
-import java.awt.event.{ActionEvent, ActionListener, MouseAdapter, MouseEvent, ItemEvent, ItemListener}
-import java.awt.image.BufferedImage
-import javax.swing.{JButton, JComboBox, JOptionPane, JPanel, JToolBar, JToggleButton, JSeparator, JComponent, JTextField, WindowConstants, SwingConstants}
+import java.awt.event.{ItemEvent, ItemListener}
+import javax.swing.{JToggleButton, JComponent, JTextField}
 import javax.swing.event.{ChangeListener, ChangeEvent, DocumentListener, DocumentEvent}
 
 import bdzimmer.pixeleditor.model.TileCollectionModel._
-import bdzimmer.pixeleditor.model.{Color, Tile, TileContainer}
-import bdzimmer.pixeleditor.controller.PalUtil
 
 import bdzimmer.util.StringUtils._
 
@@ -24,6 +18,8 @@ class VMapEntryEditor(
     vMapWindowUpdater: Updater,
     settings: Settings) {
 
+    // this is the index of the entry that will be updated when we modify
+    // dropdowns and text fields
     var vMapEntryIdx = 0
 
     // widgets to edit the properties of the selected vmapentry
@@ -38,7 +34,7 @@ class VMapEntryEditor(
       }
     });
 
-    // TODO: this should probably be more configurable
+    // TODO: the set of offset choices should probably be more configurable
     val offsetChoices = (0 to 16).map(x => x * settings.colorsPerTile).toList
     val palOffsetSelector = SettingsDialog.selector(offsetChoices, 0)
     palOffsetSelector.addItemListener(new ItemListener() {
